@@ -47,3 +47,5 @@ logs/
 
 # PWA
 /frontend/public/sw.js.map
+.vercel
+.env*.local
