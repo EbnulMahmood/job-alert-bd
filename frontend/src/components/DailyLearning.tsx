@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronUp, Flame, Trophy, BookOpen,
   FileText, Video, Code, Briefcase, RotateCcw
 } from 'lucide-react'
-import type { CompanyTrack, LearningTopic } from '../data/learningContent'
+import type { CompanyTrack } from '../data/learningContent'
 import useLearningProgress from '../hooks/useLearningProgress'
 
 interface DailyLearningProps {
