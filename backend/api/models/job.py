@@ -4,7 +4,7 @@ Job listing database model.
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ARRAY
 from sqlalchemy.sql import func
 from database.connection import Base
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime, date
 from typing import Optional
 
@@ -35,18 +35,18 @@ class Job(Base):
 # Pydantic schemas
 class JobBase(BaseModel):
     """Base schema for job data."""
-    company: str
-    title: str
-    url: str
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    location: Optional[str] = "Dhaka, Bangladesh"
-    job_type: Optional[str] = "Full-time"
-    experience_level: Optional[str] = None
+    company: str = Field(..., min_length=1, max_length=100)
+    title: str = Field(..., min_length=1, max_length=255)
+    url: str = Field(..., min_length=1, max_length=500)
+    description: Optional[str] = Field(None, max_length=50000)
+    requirements: Optional[str] = Field(None, max_length=50000)
+    location: Optional[str] = Field("Dhaka, Bangladesh", max_length=100)
+    job_type: Optional[str] = Field("Full-time", max_length=50)
+    experience_level: Optional[str] = Field(None, max_length=50)
     posted_date: Optional[date] = None
     deadline: Optional[date] = None
-    salary_range: Optional[str] = None
-    tags: Optional[list[str]] = []
+    salary_range: Optional[str] = Field(None, max_length=100)
+    tags: Optional[list[str]] = Field(default=[], max_length=20)
 
 
 class JobCreate(JobBase):

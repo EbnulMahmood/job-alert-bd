@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ARRAY
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from database.connection import Base
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
 
@@ -49,11 +49,11 @@ class PushKeys(BaseModel):
 
 class SubscriptionBase(BaseModel):
     """Base schema for subscription."""
-    email: Optional[str] = None
-    push_endpoint: Optional[str] = None
+    email: Optional[EmailStr] = None
+    push_endpoint: Optional[str] = Field(None, max_length=1000)
     push_keys: Optional[PushKeys] = None
-    companies: Optional[list[str]] = []
-    keywords: Optional[list[str]] = []
+    companies: Optional[list[str]] = Field(default=[], max_length=50)
+    keywords: Optional[list[str]] = Field(default=[], max_length=30)
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -63,11 +63,11 @@ class SubscriptionCreate(SubscriptionBase):
 
 class SubscriptionUpdate(BaseModel):
     """Schema for updating a subscription."""
-    email: Optional[str] = None
-    push_endpoint: Optional[str] = None
+    email: Optional[EmailStr] = None
+    push_endpoint: Optional[str] = Field(None, max_length=1000)
     push_keys: Optional[PushKeys] = None
-    companies: Optional[list[str]] = None
-    keywords: Optional[list[str]] = None
+    companies: Optional[list[str]] = Field(None, max_length=50)
+    keywords: Optional[list[str]] = Field(None, max_length=30)
     is_active: Optional[bool] = None
 
 

@@ -4,8 +4,10 @@ Job-related API routes.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
+from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from database.connection import get_db
+from api.dependencies import require_admin_key
 from api.models import Job, JobCreate, JobUpdate, JobResponse, JobListResponse
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -130,17 +132,19 @@ async def get_job(job_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=JobResponse)
-async def create_job(job_data: JobCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new job listing (internal use for scraper)."""
-    # Check if job already exists by URL
-    existing_query = select(Job).where(Job.url == job_data.url)
-    existing = await db.execute(existing_query)
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Job with this URL already exists")
-
+async def create_job(
+    job_data: JobCreate,
+    db: AsyncSession = Depends(get_db),
+    _: str = Depends(require_admin_key),
+):
+    """Create a new job listing (internal use for scraper). Requires admin API key."""
     job = Job(**job_data.model_dump())
     db.add(job)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Job with this URL already exists")
     await db.refresh(job)
 
     return JobResponse.model_validate(job)
@@ -151,8 +155,9 @@ async def update_job(
     job_id: int,
     job_data: JobUpdate,
     db: AsyncSession = Depends(get_db),
+    _: str = Depends(require_admin_key),
 ):
-    """Update a job listing."""
+    """Update a job listing. Requires admin API key."""
     query = select(Job).where(Job.id == job_id)
     result = await db.execute(query)
     job = result.scalar_one_or_none()
@@ -171,8 +176,12 @@ async def update_job(
 
 
 @router.delete("/{job_id}")
-async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
-    """Soft delete a job listing."""
+async def delete_job(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: str = Depends(require_admin_key),
+):
+    """Soft delete a job listing. Requires admin API key."""
     query = select(Job).where(Job.id == job_id)
     result = await db.execute(query)
     job = result.scalar_one_or_none()

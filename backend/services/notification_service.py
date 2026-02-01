@@ -4,6 +4,7 @@ Notification service for push and email notifications.
 from pywebpush import webpush, WebPushException
 import json
 import os
+import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class NotificationService:
             "url": url,
             "icon": icon,
             "badge": "/badge-72.png",
-            "timestamp": int(os.times().elapsed * 1000),
+            "timestamp": int(time.time() * 1000),
         })
 
         try:
