@@ -16,11 +16,12 @@ DATABASE_URL = os.getenv(
 )
 
 is_production = os.getenv("APP_ENV") == "production"
+is_supabase = "supabase" in DATABASE_URL
 
 # Create async engine
 connect_args = {}
-if is_production:
-    # Supabase pooler requires: no prepared statements + SSL
+if is_supabase or is_production:
+    # Supabase (pooler or direct) requires: no prepared statements + SSL
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
@@ -32,7 +33,7 @@ if is_production:
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=not is_production,
+    echo=not is_production and not is_supabase,
     pool_size=5,
     max_overflow=10,
     connect_args=connect_args,
