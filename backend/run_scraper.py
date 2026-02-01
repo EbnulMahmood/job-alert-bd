@@ -48,12 +48,26 @@ async def run_all_scrapers() -> list[JobListing]:
 
 async def save_jobs_to_db(jobs: list[JobListing]) -> dict:
     """Save jobs to database, avoiding duplicates."""
+    import ssl
+
     DATABASE_URL = os.getenv(
         "DATABASE_URL",
         "postgresql+asyncpg://postgres:postgres@localhost:5432/job_alert_bd"
     )
 
-    engine = create_async_engine(DATABASE_URL)
+    # Supabase requires SSL
+    connect_args = {}
+    if "supabase" in DATABASE_URL:
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        connect_args = {
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+            "ssl": ssl_context,
+        }
+
+    engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
 
     # Create tables if they don't exist
     async with engine.begin() as conn:
