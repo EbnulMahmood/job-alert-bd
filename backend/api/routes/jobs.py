@@ -48,7 +48,7 @@ async def get_jobs(
 
     # Get total count
     count_query = select(func.count()).select_from(query.subquery())
-    total = await db.scalar(count_query)
+    total = await db.scalar(count_query) or 0
 
     # Apply pagination
     offset = (page - 1) * per_page
@@ -58,7 +58,7 @@ async def get_jobs(
     result = await db.execute(query)
     jobs = result.scalars().all()
 
-    total_pages = (total + per_page - 1) // per_page
+    total_pages = max((total + per_page - 1) // per_page, 1) if total else 0
 
     return JobListResponse(
         jobs=[JobResponse.model_validate(job) for job in jobs],
