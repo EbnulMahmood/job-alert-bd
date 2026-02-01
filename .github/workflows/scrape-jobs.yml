@@ -1,0 +1,54 @@
+name: Daily Job Scraper
+
+on:
+  schedule:
+    # Run at 9 AM Bangladesh time (3 AM UTC)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+  VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+  VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run scraper
+        run: |
+          cd backend
+          python run_scraper.py
+
+      - name: Send notifications (optional)
+        if: success()
+        run: |
+          echo "Scraping completed successfully!"
+          # Add notification logic here if needed
+
+  notify-on-failure:
+    needs: scrape
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure
+        run: |
+          echo "Job scraping failed! Check the logs."
+          # Add failure notification (email, Slack, etc.)
