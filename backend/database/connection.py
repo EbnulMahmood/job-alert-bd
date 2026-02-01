@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
 import os
+import ssl
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,12 +15,27 @@ DATABASE_URL = os.getenv(
     "postgresql+asyncpg://postgres:postgres@localhost:5432/job_alert_bd"
 )
 
+is_production = os.getenv("APP_ENV") == "production"
+
 # Create async engine
+connect_args = {}
+if is_production:
+    # Supabase pooler requires: no prepared statements + SSL
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    connect_args = {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        "ssl": ssl_context,
+    }
+
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # Set to False in production
+    echo=not is_production,
     pool_size=5,
     max_overflow=10,
+    connect_args=connect_args,
 )
 
 # Create session factory
