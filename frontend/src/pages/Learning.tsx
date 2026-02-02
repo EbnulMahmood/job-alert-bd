@@ -263,12 +263,12 @@ function Learning() {
         </div>
       )}
 
-      {/* Coming Soon */}
-      <div className="mt-8 card bg-gray-50 border-dashed border-2 border-gray-300">
-        <div className="text-center py-6">
-          <h3 className="font-medium text-gray-700 mb-2">More Tracks Coming Soon!</h3>
+      {/* Track Count Info */}
+      <div className="mt-8 card bg-gray-50">
+        <div className="text-center py-4">
           <p className="text-sm text-gray-500">
-            We're adding preparation tracks for Enosis, BJIT, Therap, Brain Station 23, and more government positions.
+            {allTracks.length} company-specific preparation tracks available.
+            Each track is tailored to the company's actual interview process.
           </p>
         </div>
       </div>

@@ -48,4 +48,16 @@ body {
   .badge-gray {
     @apply bg-gray-100 text-gray-800;
   }
+
+  .badge-recommended {
+    @apply bg-gradient-to-r from-purple-500 to-indigo-600 text-white;
+  }
+
+  .badge-private {
+    @apply bg-gray-50 text-gray-500 border border-gray-200;
+  }
+
+  .badge-red {
+    @apply bg-red-100 text-red-800;
+  }
 }

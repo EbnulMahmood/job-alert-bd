@@ -114,6 +114,17 @@ export const subscriptionApi = {
     await api.delete(`/subscriptions/${id}`)
   },
 
+  lookupByEndpoint: async (pushEndpoint: string): Promise<Subscription | null> => {
+    try {
+      const { data } = await api.post('/subscriptions/lookup-by-endpoint', {
+        push_endpoint: pushEndpoint,
+      })
+      return data
+    } catch {
+      return null
+    }
+  },
+
   unsubscribeByEmail: async (email: string): Promise<void> => {
     await api.post('/subscriptions/unsubscribe-by-email', null, { params: { email } })
   },

@@ -37,7 +37,7 @@ function Jobs() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Job Openings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Explore Opportunities</h1>
 
       {/* Search */}
       <form onSubmit={handleSearch} className="mb-6">
@@ -47,7 +47,7 @@ function Jobs() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search jobs by title, description, or keywords..."
+            placeholder="Search by title, company, or keywords..."
             className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
@@ -113,7 +113,7 @@ function Jobs() {
         <p className="text-sm text-gray-500">
           {jobsData ? (
             <>
-              Showing {((page - 1) * 20) + 1}-{Math.min(page * 20, jobsData.total)} of {jobsData.total} jobs
+              Showing {((page - 1) * 20) + 1}-{Math.min(page * 20, jobsData.total)} of {jobsData.total} opportunities
             </>
           ) : (
             'Loading...'
@@ -144,7 +144,7 @@ function Jobs() {
       ) : (
         <div className="card text-center py-10">
           <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No jobs found matching your criteria.</p>
+          <p className="text-gray-500">No opportunities found matching your criteria.</p>
           <button
             onClick={() => {
               setSearch('')

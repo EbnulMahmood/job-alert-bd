@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Briefcase, Building2, TrendingUp, ArrowRight, Bell } from 'lucide-react'
+import { Building2, TrendingUp, ArrowRight, GraduationCap, BookOpen, Trophy, Compass } from 'lucide-react'
 import { jobsApi } from '../services/api'
 import JobCard from '../components/JobCard'
-import NotificationSettings from '../components/NotificationSettings'
 
 function Home() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -21,20 +20,20 @@ function Home() {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-6 md:p-10 text-white mb-8">
         <h1 className="text-2xl md:text-4xl font-bold mb-4">
-          Find Your Next Tech Job in Bangladesh
+          Master Your Tech Interview
         </h1>
         <p className="text-primary-100 mb-6 max-w-2xl">
-          Monitor job openings from top tech companies like Cefalo, SELISE, Samsung R&D,
-          and more. Get instant alerts for .NET, C#, and software developer positions.
+          Company-specific preparation tracks for top Bangladesh tech companies.
+          Daily learning plans, interview guides, and curated resources for .NET, C#, and backend developers.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link to="/jobs" className="bg-white text-primary-700 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors flex items-center gap-2">
-            Browse Jobs
+          <Link to="/learning" className="bg-white text-primary-700 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors flex items-center gap-2">
+            Start Learning
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link to="/settings" className="bg-primary-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-400 transition-colors flex items-center gap-2">
-            <Bell className="w-4 h-4" />
-            Set Up Alerts
+          <Link to="/preparation" className="bg-primary-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-400 transition-colors flex items-center gap-2">
+            <BookOpen className="w-4 h-4" />
+            Preparation Guide
           </Link>
         </div>
       </div>
@@ -44,13 +43,11 @@ function Home() {
         <div className="card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-blue-600" />
+              <GraduationCap className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {statsLoading ? '...' : stats?.total_jobs || 0}
-              </p>
-              <p className="text-sm text-gray-500">Active Jobs</p>
+              <p className="text-2xl font-bold text-gray-900">9</p>
+              <p className="text-sm text-gray-500">Learning Tracks</p>
             </div>
           </div>
         </div>
@@ -62,7 +59,7 @@ function Home() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {statsLoading ? '...' : Object.keys(stats?.by_company || {}).length}
+                {statsLoading ? '...' : Object.keys(stats?.by_company || {}).length || 10}
               </p>
               <p className="text-sm text-gray-500">Companies</p>
             </div>
@@ -76,9 +73,9 @@ function Home() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {statsLoading ? '...' : stats?.by_experience_level?.['Senior'] || 0}
+                {statsLoading ? '...' : stats?.total_jobs || 0}
               </p>
-              <p className="text-sm text-gray-500">Senior Roles</p>
+              <p className="text-sm text-gray-500">Opportunities</p>
             </div>
           </div>
         </div>
@@ -86,25 +83,62 @@ function Home() {
         <div className="card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Bell className="w-5 h-5 text-orange-600" />
+              <Trophy className="w-5 h-5 text-orange-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">Daily</p>
-              <p className="text-sm text-gray-500">Updates</p>
+              <p className="text-sm text-gray-500">New Content</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Notification Setup */}
-      <div className="mb-8">
-        <NotificationSettings />
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Link to="/learning" className="card hover:shadow-md transition-shadow group">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+              <GraduationCap className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Daily Learning</h3>
+              <p className="text-sm text-gray-500">Company-specific prep tracks</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
+          </div>
+        </Link>
+
+        <Link to="/rankings" className="card hover:shadow-md transition-shadow group">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center group-hover:bg-yellow-200 transition-colors">
+              <Trophy className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Company Rankings</h3>
+              <p className="text-sm text-gray-500">Top companies rated & compared</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
+          </div>
+        </Link>
+
+        <Link to="/jobs" className="card hover:shadow-md transition-shadow group">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+              <Compass className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Explore Opportunities</h3>
+              <p className="text-sm text-gray-500">Latest openings from top companies</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
+          </div>
+        </Link>
       </div>
 
-      {/* Recent Jobs */}
+      {/* Recent Opportunities */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Job Openings</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Latest Opportunities</h2>
           <Link to="/jobs" className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1">
             View All
             <ArrowRight className="w-4 h-4" />
@@ -129,15 +163,15 @@ function Home() {
           </div>
         ) : (
           <div className="card text-center py-10">
-            <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No jobs found yet. Check back later!</p>
+            <Compass className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No opportunities found yet. Check back later!</p>
           </div>
         )}
       </div>
 
-      {/* Companies Being Monitored */}
+      {/* Companies We Cover */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Companies We Monitor</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Companies We Cover</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             'Cefalo', 'Kaz Software', 'SELISE', 'Enosis', 'BJIT',

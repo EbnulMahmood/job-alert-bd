@@ -1,7 +1,7 @@
 {
-  "name": "BD Job Alert",
-  "short_name": "JobAlert",
-  "description": "Monitor tech job openings from top Bangladesh companies",
+  "name": "BD Tech Prep",
+  "short_name": "TechPrep",
+  "description": "Interview preparation & career guide for Bangladesh tech professionals",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -24,18 +24,23 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": ["education", "productivity"],
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Browse Jobs",
-      "url": "/jobs",
-      "description": "View all job openings"
+      "name": "Daily Learning",
+      "url": "/learning",
+      "description": "Company-specific preparation tracks"
     },
     {
       "name": "Preparation Guide",
       "url": "/preparation",
-      "description": "Interview preparation tips"
+      "description": "Interview preparation checklist & tips"
+    },
+    {
+      "name": "Company Rankings",
+      "url": "/rankings",
+      "description": "Top tech companies rated & compared"
     }
   ]
 }

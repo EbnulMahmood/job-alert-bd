@@ -114,15 +114,29 @@ const companyInfo: CompanyInfo[] = [
   },
   {
     name: 'Samsung R&D',
-    interviewProcess: 'Multiple Technical Rounds',
-    focusAreas: ['DSA', 'System Design', 'Android/Mobile'],
-    tips: 'Strong DSA is essential, competitive programming background helps',
+    interviewProcess: 'Online Aptitude Test → Coding Test (DSA heavy) → Multiple Technical Rounds → HR',
+    focusAreas: ['DSA', 'System Design', 'C/C++', 'AI/ML'],
+    tips: 'Strong DSA is essential, competitive programming background helps. Highest salary in BD tech.',
+  },
+  {
+    name: 'BJIT',
+    interviewProcess: 'Written Test (programming + aptitude) → Technical Interview → HR',
+    focusAreas: ['.NET/Java', 'Web API', 'React/Angular', 'SQL', 'Agile/Documentation'],
+    tips: 'Japanese client culture - quality and documentation emphasized. Diverse tech stack exposure.',
+    duration: '~3 weeks',
+  },
+  {
+    name: 'Brain Station 23',
+    interviewProcess: 'Written Test (MCQ + Coding) → Technical Interview → HR',
+    focusAreas: ['.NET/Java/Node.js', 'React/Angular', 'SQL', 'System Design'],
+    tips: 'Largest local company (700+ engineers). Good entry point for freshers. Frequent hiring.',
+    duration: '~2 weeks',
   },
   {
     name: 'Bangladesh Bank',
-    interviewProcess: 'Preliminary MCQ → Written Exam → Practical Test → Viva',
-    focusAreas: ['General IT knowledge', 'Programming basics', 'Current affairs'],
-    tips: 'BCS-style preparation, basic programming, computer fundamentals',
+    interviewProcess: 'Preliminary MCQ → Written Exam → Practical Test → Viva → Medical',
+    focusAreas: ['General IT knowledge', 'Programming basics (C/C++)', 'DBMS', 'Current affairs'],
+    tips: 'BCS-style preparation. Lifetime job security + government benefits. Focus on fundamentals.',
   },
 ]
 

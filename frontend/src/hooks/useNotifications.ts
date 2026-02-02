@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { notificationApi, subscriptionApi } from '../services/api'
+import { notificationApi, subscriptionApi, Subscription } from '../services/api'
 
-interface PushSubscription {
+interface PushSubscriptionData {
   endpoint: string
   keys: {
     p256dh: string
@@ -15,9 +15,9 @@ export function useNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
 
   useEffect(() => {
-    // Check if push notifications are supported
     const supported = 'serviceWorker' in navigator && 'PushManager' in window
     setIsSupported(supported)
 
@@ -30,8 +30,16 @@ export function useNotifications() {
   const checkSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
-      setIsSubscribed(!!subscription)
+      const pushSub = await registration.pushManager.getSubscription()
+      setIsSubscribed(!!pushSub)
+
+      // If push subscription exists, look up backend subscription to get preferences
+      if (pushSub) {
+        const backendSub = await subscriptionApi.lookupByEndpoint(pushSub.endpoint)
+        if (backendSub) {
+          setSubscription(backendSub)
+        }
+      }
     } catch (err) {
       console.error('Error checking subscription:', err)
     }
@@ -47,7 +55,7 @@ export function useNotifications() {
       const result = await Notification.requestPermission()
       setPermission(result)
       return result === 'granted'
-    } catch (err) {
+    } catch {
       setError('Failed to request notification permission')
       return false
     }
@@ -67,7 +75,6 @@ export function useNotifications() {
     setError(null)
 
     try {
-      // Request permission if not granted
       if (permission !== 'granted') {
         const granted = await requestPermission()
         if (!granted) {
@@ -77,29 +84,22 @@ export function useNotifications() {
         }
       }
 
-      // Get VAPID public key
       const vapidPublicKey = await notificationApi.getVapidPublicKey()
-
-      // Convert VAPID key to Uint8Array
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey)
-
-      // Get service worker registration
       const registration = await navigator.serviceWorker.ready
 
-      // Subscribe to push
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey as BufferSource,
       })
 
-      // Extract subscription data
       const p256dhKey = pushSubscription.getKey('p256dh')
       const authKey = pushSubscription.getKey('auth')
       if (!p256dhKey || !authKey) {
         throw new Error('Failed to get push subscription keys')
       }
 
-      const subscriptionData: PushSubscription = {
+      const subscriptionData: PushSubscriptionData = {
         endpoint: pushSubscription.endpoint,
         keys: {
           p256dh: arrayBufferToBase64(p256dhKey),
@@ -107,8 +107,7 @@ export function useNotifications() {
         },
       }
 
-      // Save subscription to backend
-      await subscriptionApi.create({
+      const backendSub = await subscriptionApi.create({
         email,
         push_endpoint: subscriptionData.endpoint,
         push_keys: subscriptionData.keys,
@@ -116,6 +115,7 @@ export function useNotifications() {
         keywords: keywords || [],
       })
 
+      setSubscription(backendSub)
       setIsSubscribed(true)
       setLoading(false)
       return true
@@ -133,13 +133,23 @@ export function useNotifications() {
 
     try {
       const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
+      const pushSub = await registration.pushManager.getSubscription()
 
-      if (subscription) {
-        await subscription.unsubscribe()
+      if (pushSub) {
+        await pushSub.unsubscribe()
+      }
+
+      // Deactivate on backend too
+      if (subscription?.id) {
+        try {
+          await subscriptionApi.delete(subscription.id)
+        } catch {
+          // Ignore if already deleted
+        }
       }
 
       setIsSubscribed(false)
+      setSubscription(null)
       setLoading(false)
       return true
     } catch (err) {
@@ -148,7 +158,37 @@ export function useNotifications() {
       setLoading(false)
       return false
     }
-  }, [])
+  }, [subscription])
+
+  const updatePreferences = useCallback(async (
+    companies: string[],
+    keywords: string[],
+    email?: string,
+  ): Promise<boolean> => {
+    if (!subscription?.id) {
+      setError('No active subscription to update')
+      return false
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const updated = await subscriptionApi.update(subscription.id, {
+        companies,
+        keywords,
+        ...(email !== undefined ? { email } : {}),
+      })
+      setSubscription(updated)
+      setLoading(false)
+      return true
+    } catch (err) {
+      console.error('Update preferences error:', err)
+      setError('Failed to update preferences')
+      setLoading(false)
+      return false
+    }
+  }, [subscription])
 
   return {
     isSupported,
@@ -156,9 +196,11 @@ export function useNotifications() {
     permission,
     loading,
     error,
+    subscription,
     requestPermission,
     subscribe,
     unsubscribe,
+    updatePreferences,
   }
 }
 

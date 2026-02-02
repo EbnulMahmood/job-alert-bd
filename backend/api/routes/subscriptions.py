@@ -1,7 +1,7 @@
 """
 Subscription-related API routes.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.connection import get_db
@@ -119,6 +119,25 @@ async def delete_subscription(
     await db.commit()
 
     return {"message": "Unsubscribed successfully"}
+
+
+@router.post("/lookup-by-endpoint", response_model=SubscriptionResponse)
+async def lookup_by_endpoint(
+    push_endpoint: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+):
+    """Look up a subscription by its push endpoint URL."""
+    query = select(Subscription).where(
+        Subscription.push_endpoint == push_endpoint,
+        Subscription.is_active == True,
+    )
+    result = await db.execute(query)
+    subscription = result.scalar_one_or_none()
+
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    return SubscriptionResponse.model_validate(subscription)
 
 
 @router.post("/unsubscribe-by-email")

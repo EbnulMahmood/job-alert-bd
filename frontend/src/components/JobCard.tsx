@@ -1,6 +1,7 @@
-import { ExternalLink, MapPin, Clock, Briefcase } from 'lucide-react'
+import { ExternalLink, MapPin, Clock, Briefcase, Star, Building2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Job } from '../services/api'
+import { isDotNetRecommended, isPrivateCompany } from '../utils/jobClassification'
 
 interface JobCardProps {
   job: Job
@@ -14,15 +15,30 @@ function JobCard({ job }: JobCardProps) {
     'Intern': 'badge-gray',
   }[job.experience_level || ''] || 'badge-gray'
 
+  const isRecommended = isDotNetRecommended(job)
+  const isPrivate = isPrivateCompany(job)
+
   return (
-    <div className="card hover:shadow-md transition-shadow">
+    <div className={`card hover:shadow-md transition-shadow ${isRecommended ? 'border-l-4 border-l-purple-500' : ''}`}>
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-sm font-medium text-primary-600">{job.company}</span>
             {job.experience_level && (
               <span className={`badge ${experienceBadgeColor}`}>
                 {job.experience_level}
+              </span>
+            )}
+            {isRecommended && (
+              <span className="badge badge-recommended">
+                <Star className="w-3 h-3 mr-0.5" />
+                Recommended
+              </span>
+            )}
+            {isPrivate && !isRecommended && (
+              <span className="badge badge-private">
+                <Building2 className="w-3 h-3 mr-0.5" />
+                Private
               </span>
             )}
           </div>
@@ -69,7 +85,7 @@ function JobCard({ job }: JobCardProps) {
           rel="noopener noreferrer"
           className="btn-primary flex items-center gap-1 whitespace-nowrap"
         >
-          Apply
+          View
           <ExternalLink className="w-4 h-4" />
         </a>
       </div>

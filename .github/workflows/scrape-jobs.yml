@@ -12,6 +12,8 @@ env:
   VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
   VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+  RENDER_API_URL: ${{ secrets.RENDER_API_URL }}
 
 jobs:
   scrape:
@@ -37,11 +39,22 @@ jobs:
           cd backend
           python run_scraper.py
 
-      - name: Send notifications (optional)
+      - name: Trigger daily digest notifications
         if: success()
         run: |
-          echo "Scraping completed successfully!"
-          # Add notification logic here if needed
+          echo "Scraping completed. Triggering daily digest notifications..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${RENDER_API_URL}/api/notifications/send-daily-digest" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${ADMIN_API_KEY}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "Response ($HTTP_CODE): $BODY"
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Daily digest sent successfully!"
+          else
+            echo "Warning: Daily digest failed (HTTP $HTTP_CODE), but scraping was successful."
+          fi
 
   notify-on-failure:
     needs: scrape
@@ -51,4 +64,3 @@ jobs:
       - name: Notify failure
         run: |
           echo "Job scraping failed! Check the logs."
-          # Add failure notification (email, Slack, etc.)

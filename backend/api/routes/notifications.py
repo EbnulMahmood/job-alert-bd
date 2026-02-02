@@ -9,6 +9,7 @@ from database.connection import get_db
 from api.dependencies import require_admin_key
 from api.models import Subscription, NotificationLog, Job
 from services.notification_service import NotificationService
+from services.email_service import EmailService
 import os
 import logging
 
@@ -17,6 +18,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 notification_service = NotificationService()
+email_service = EmailService()
+APP_URL = os.getenv("APP_URL", "http://localhost:5173")
 
 
 @router.get("/vapid-public-key")
@@ -76,16 +79,20 @@ async def send_daily_digest(
     if not new_jobs:
         return {"success": True, "sent": 0, "errors": 0, "message": "No new jobs in last 24h"}
 
-    # Get all active subscriptions with push endpoints
-    query = select(Subscription).where(
-        Subscription.is_active == True,
-        Subscription.push_endpoint.isnot(None),
-    )
+    # Get all active subscriptions (push or email)
+    query = select(Subscription).where(Subscription.is_active == True)
     result = await db.execute(query)
     subscriptions = result.scalars().all()
 
-    sent_count = 0
+    push_sent = 0
+    email_sent = 0
     error_count = 0
+
+    # Get total active jobs count for email digest stats
+    total_jobs_result = await db.execute(
+        select(func.count(Job.id)).where(Job.is_active == True)
+    )
+    total_active_jobs = total_jobs_result.scalar() or 0
 
     for subscription in subscriptions:
         try:
@@ -94,25 +101,50 @@ async def send_daily_digest(
             if not matching_jobs:
                 continue
 
-            success = await notification_service.send_daily_digest(
-                endpoint=subscription.push_endpoint,
-                keys=subscription.push_keys,
-                new_jobs_count=len(matching_jobs),
-            )
+            # Send push notification if push endpoint exists
+            if subscription.push_endpoint and subscription.push_keys:
+                push_success = await notification_service.send_daily_digest(
+                    endpoint=subscription.push_endpoint,
+                    keys=subscription.push_keys,
+                    new_jobs_count=len(matching_jobs),
+                )
+                if push_success:
+                    push_sent += 1
+                    for job in matching_jobs[:5]:
+                        db.add(NotificationLog(
+                            subscription_id=subscription.id,
+                            job_id=job.id,
+                            notification_type="push",
+                            status="sent",
+                        ))
+                else:
+                    error_count += 1
 
-            if success:
-                sent_count += 1
-                # Log notification
-                for job in matching_jobs[:5]:  # Log up to 5
-                    log = NotificationLog(
-                        subscription_id=subscription.id,
-                        job_id=job.id,
-                        notification_type="push",
-                        status="sent",
-                    )
-                    db.add(log)
-            else:
-                error_count += 1
+            # Send email if email exists
+            if subscription.email:
+                jobs_for_email = [
+                    {
+                        "title": j.title,
+                        "company": j.company,
+                        "url": j.url,
+                        "location": j.location or "Bangladesh",
+                        "description": j.description,
+                    }
+                    for j in matching_jobs[:10]
+                ]
+                email_success = await email_service.send_job_alert(
+                    to=subscription.email,
+                    jobs=jobs_for_email,
+                )
+                if email_success:
+                    email_sent += 1
+                    for job in matching_jobs[:5]:
+                        db.add(NotificationLog(
+                            subscription_id=subscription.id,
+                            job_id=job.id,
+                            notification_type="email",
+                            status="sent",
+                        ))
 
         except Exception as e:
             logger.error(f"Failed to send digest to sub {subscription.id}: {e}")
@@ -123,7 +155,8 @@ async def send_daily_digest(
     return {
         "success": True,
         "new_jobs": len(new_jobs),
-        "sent": sent_count,
+        "push_sent": push_sent,
+        "email_sent": email_sent,
         "errors": error_count,
     }
 

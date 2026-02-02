@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'BD Job Alert',
-        short_name: 'JobAlert',
-        description: 'Monitor tech job openings in Bangladesh',
+        name: 'BD Tech Prep',
+        short_name: 'TechPrep',
+        description: 'Interview preparation & career guide for Bangladesh tech professionals',
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',

@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Jobs from './pages/Jobs'
 import Learning from './pages/Learning'
 import Preparation from './pages/Preparation'
+import Rankings from './pages/Rankings'
 import Settings from './pages/Settings'
 import Layout from './components/Layout'
 
@@ -15,6 +16,7 @@ function App() {
           <Route path="jobs" element={<Jobs />} />
           <Route path="learning" element={<Learning />} />
           <Route path="preparation" element={<Preparation />} />
+          <Route path="rankings" element={<Rankings />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
