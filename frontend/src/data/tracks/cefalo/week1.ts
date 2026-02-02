@@ -89,7 +89,7 @@ Result: s1.Val = 5, c1.Val = 99`,
       'Review value types vs reference types with code examples',
       'Practice boxing/unboxing - write 3 examples showing performance difference',
       'Write examples using List<T>, Dictionary<K,V>, HashSet<T>, Queue<T>',
-      'Implement the generic Stack<T> practice problem above',
+      'Implement a generic Stack<T> class using an array with Push, Pop, Peek methods',
     ],
     quiz: [
       {
@@ -205,8 +205,8 @@ Console.WriteLine(list.Count); // Output: 4`,
         description: 'Given a list of students with Name, Subject, and Score, write LINQ queries to:\n1. Find the top scorer in each subject\n2. Find students who scored above average in ALL their subjects\n3. Get the subject with the highest average score\n\nUse both Query Syntax and Method Syntax.',
         sampleInput: `[("Alice","Math",85), ("Alice","Science",92), ("Bob","Math",95), ("Bob","Science",78), ("Carol","Math",88), ("Carol","Science",90)]`,
         sampleOutput: `Top scorers: Math-Bob(95), Science-Alice(92)
-Above avg in all: Carol
-Highest avg subject: Science(86.67)`,
+Above avg in all: None (no student scores above avg in every subject)
+Highest avg subject: Math(89.33)`,
         hints: [
           'Use GroupBy on Subject, then OrderByDescending + First for top scorers',
           'For "above average in ALL subjects", first compute each subject avg, then check each student',
@@ -239,7 +239,7 @@ students.GroupBy(s => s.Name)
     tasks: [
       'Practice 10 LINQ queries: Where, Select, OrderBy, GroupBy, Join',
       'Convert 5 query syntax queries to method syntax and vice versa',
-      'Implement the 3 custom LINQ extension methods from Practice Problem 2',
+      'Write custom LINQ extension methods: WhereIf, Paginate, DistinctBy',
       'Use LINQPad to experiment with deferred execution behavior',
     ],
     quiz: [
@@ -403,7 +403,7 @@ catch (OperationCanceledException)
     tasks: [
       'Write async methods using Task and ValueTask - compare performance',
       'Implement the rate-limited parallel HTTP fetcher from Practice Problem 1',
-      'Reproduce and fix the deadlock scenario from Practice Problem 2',
+      'Reproduce the .Result deadlock: call GetAsync().Result from a sync method and observe the hang',
       'Practice CancellationToken usage in a chain of async methods',
     ],
     quiz: [

@@ -838,7 +838,7 @@ public class BookRepository : IBookRepository
 // MyApp.Api/Program.cs
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<BookService>();`,
-        explanation: 'Dependencies flow Domain to Application to Infrastructure to API. Each layer only references its inner layer. BookService (Application) knows IBookRepository; BookRepository (Infrastructure) implements it.',
+        explanation: 'Dependencies point inward: API → Infrastructure → Application → Domain. Each layer only references its inner layer. BookService (Application) knows IBookRepository interface; BookRepository (Infrastructure) implements it.',
         keyPoints: [
           'Domain has zero NuGet references - pure C# only',
           'Application defines interfaces; Infrastructure implements them',
