@@ -12,28 +12,20 @@ export const cefaloWeek2: LearningTopic[] = [
       { type: 'article', title: 'Web API Tutorial', url: 'https://learn.microsoft.com/en-us/aspnet/core/tutorials/first-web-api' },
       { type: 'video', title: 'ASP.NET Core REST API Tutorial', url: 'https://www.youtube.com/watch?v=fmvcAzHpsk8' },
     ],
-    detailedExplanation: `ASP.NET Core Web API হলো RESTful HTTP services তৈরির framework। Cefalo তে প্রায় সব project ই Web API based।
+    detailedExplanation: `ASP.NET Core Web API is a framework for building RESTful HTTP services. Requests flow through a middleware pipeline (authentication, authorization, routing) before reaching controller action methods that return typed responses with proper HTTP status codes.
 
-Request Pipeline: HTTP Request → Middleware Pipeline → Routing → Controller → Action Method → Response। Middleware গুলো sequential ভাবে execute হয় - UseAuthentication, UseAuthorization, UseCors ইত্যাদি। Order matters!
+Controllers group related endpoints. The [ApiController] attribute enables automatic model validation (returns 400 for invalid input) and parameter source inference ([FromBody] for JSON body, [FromQuery] for query strings). Each action should return appropriate status codes: 201 Created for POST, 204 No Content for PUT/DELETE, 404 Not Found when a resource is missing.
 
-Controllers হলো API endpoint group। [ApiController] attribute automatic model validation এবং 400 Bad Request response দেয়। [Route("api/[controller]")] convention-based routing define করে।
-
-Model Binding: ASP.NET Core automatically HTTP request data (body, query string, route) কে method parameters এ bind করে। [FromBody] = JSON body, [FromQuery] = query string, [FromRoute] = URL path parameter।
-
-HTTP Status Codes: 200 OK (success), 201 Created (resource created, include Location header), 204 No Content (success but no body), 400 Bad Request (validation error), 404 Not Found, 409 Conflict, 500 Internal Server Error। Proper status codes ব্যবহার করলে API self-documenting হয়।`,
+Keep controllers thin. They should only map HTTP requests to service calls and return results. All business logic belongs in the service layer.`,
     keyConcepts: [
       'Middleware pipeline order matters: UseRouting → UseAuthentication → UseAuthorization → MapControllers',
-      '[ApiController] enables automatic model validation (returns 400 for invalid models)',
       'Use proper HTTP methods: GET (read), POST (create), PUT (full update), PATCH (partial), DELETE',
       'Return ActionResult<T> for type-safe responses with proper status codes',
-      'Pagination, filtering, and sorting should use query parameters (GET /api/books?page=1&size=10)',
     ],
     commonMistakes: [
-      'Putting business logic in controllers instead of service layer - violates separation of concerns',
+      'Putting business logic in controllers instead of the service layer',
       'Not returning proper HTTP status codes (always returning 200 even for errors)',
-      'Exposing domain entities directly in API responses instead of using DTOs',
-      'Not implementing pagination - returning all records can crash with large datasets',
-      'Middleware order wrong - UseAuthorization before UseAuthentication causes 401 errors',
+      'Exposing domain entities directly instead of using DTOs',
     ],
     codeExamples: [
       {
@@ -92,11 +84,9 @@ public class BooksController : ControllerBase
         return NoContent();
     }
 }`,
-        explanation: 'প্রতিটি action proper HTTP method এবং status code return করে। CreatedAtAction Location header সহ 201 দেয়। DTOs ব্যবহার করে domain entities expose হচ্ছে না।',
+        explanation: 'Each action uses the correct HTTP method and status code. CreatedAtAction returns 201 with a Location header. DTOs are used instead of exposing domain entities.',
         keyPoints: [
           'CreatedAtAction returns 201 with Location header pointing to the new resource',
-          'NotFound() returns 404, NoContent() returns 204, Ok(data) returns 200',
-          '[FromQuery] for search/pagination params, [FromBody] for request payload',
           'Controller only orchestrates - actual logic lives in IBookService',
         ],
       },
@@ -153,7 +143,7 @@ DTOs:
         question: 'What HTTP status code should POST return when a resource is created?',
         options: ['200 OK', '201 Created', '204 No Content', '202 Accepted'],
         correctAnswer: 1,
-        explanation: '201 Created with a Location header pointing to the new resource. Use CreatedAtAction() in ASP.NET Core.',
+        explanation: 'POST should return 201 Created with a Location header pointing to the new resource.',
         difficulty: 'easy',
       },
       {
@@ -165,7 +155,7 @@ DTOs:
           'Adds authentication requirement',
         ],
         correctAnswer: 1,
-        explanation: '[ApiController] auto-validates models (returns 400), infers [FromBody]/[FromQuery], and returns RFC 7807 ProblemDetails for errors.',
+        explanation: 'It auto-validates models, infers parameter sources, and returns ProblemDetails for errors.',
         difficulty: 'medium',
       },
       {
@@ -177,19 +167,7 @@ DTOs:
           'Order does not matter',
         ],
         correctAnswer: 1,
-        explanation: 'Routing must come first to determine the endpoint, then Authentication to identify the user, then Authorization to check permissions.',
-        difficulty: 'medium',
-      },
-      {
-        question: 'Why should you use DTOs instead of exposing domain entities in API responses?',
-        options: [
-          'DTOs are faster to serialize',
-          'To control the API shape, hide internal properties, prevent over-posting, and decouple API from database schema',
-          'Domain entities cannot be serialized to JSON',
-          'DTOs use less memory',
-        ],
-        correctAnswer: 1,
-        explanation: 'DTOs prevent exposing internal fields (passwords, FK IDs), allow API versioning independent of DB schema, and prevent over-posting attacks.',
+        explanation: 'Routing determines the endpoint, then Authentication identifies the user, then Authorization checks permissions.',
         difficulty: 'medium',
       },
       {
@@ -201,45 +179,19 @@ DTOs:
           '[FromQuery] reads headers; [FromBody] reads form data',
         ],
         correctAnswer: 1,
-        explanation: '[FromBody] deserializes the JSON request body into the parameter. [FromQuery] reads key-value pairs from the URL query string (?key=value).',
+        explanation: '[FromBody] deserializes the JSON body; [FromQuery] reads URL query string key-value pairs.',
         difficulty: 'easy',
       },
     ],
     interviewQuestions: [
       {
         question: 'How does the ASP.NET Core middleware pipeline work?',
-        answer: `The middleware pipeline is a chain of components that process HTTP requests and responses. Each middleware can process the request, pass it to the next middleware via next(), and then process the response on the way back.
+        answer: `The middleware pipeline is a chain of components that process HTTP requests and responses in the order they are registered in Program.cs. Each middleware can process the request, pass it to the next via next(), and process the response on the way back. The order is critical: UseRouting must come before UseAuthorization, UseAuthentication before UseAuthorization.
 
-Middleware executes in the order they are registered in Program.cs. The order is critical: UseRouting() must come before UseAuthorization(), UseAuthentication() before UseAuthorization(), etc.
-
-Each middleware can: (1) Short-circuit the pipeline (return early without calling next). (2) Modify the request before passing it. (3) Modify the response after the next middleware returns.
-
-Common middleware: UseExceptionHandler (global error handling), UseCors (cross-origin), UseAuthentication, UseAuthorization, UseRateLimiter, MapControllers (endpoint routing).
-
-Custom middleware: Implement IMiddleware or use the convention (RequestDelegate constructor + InvokeAsync method).`,
+Each middleware can short-circuit the pipeline (return early without calling next), modify the request before passing it along, or modify the response after the next middleware returns. Common middleware includes UseExceptionHandler, UseCors, UseAuthentication, UseAuthorization, and MapControllers.`,
         followUp: [
-          'How would you create custom middleware for logging request/response?',
+          'How would you create custom middleware for logging?',
           'What happens if middleware does not call next()?',
-          'How does exception handling middleware work?',
-        ],
-      },
-      {
-        question: 'How do you handle validation in ASP.NET Core Web API?',
-        answer: `Multiple layers of validation:
-
-1. Model Validation with Data Annotations: [Required], [StringLength], [Range], [EmailAddress] on DTO properties. [ApiController] automatically returns 400 for invalid models.
-
-2. FluentValidation: More powerful, testable validation rules in separate validator classes. Integrates with ASP.NET Core pipeline via AddFluentValidation().
-
-3. Business Rule Validation: In the service layer - check for duplicates, verify relationships, enforce business rules. Return appropriate errors.
-
-4. Database Constraints: Unique indexes, foreign keys, check constraints as the last line of defense.
-
-Best practice: Validate at API boundary (DTOs) with DataAnnotations/FluentValidation, enforce business rules in service layer, rely on DB constraints as safety net. Never trust client input.`,
-        followUp: [
-          'How does FluentValidation compare to Data Annotations?',
-          'How would you return validation errors in a consistent format?',
-          'What is the ProblemDetails RFC 7807 format?',
         ],
       },
     ],
@@ -254,28 +206,20 @@ Best practice: Validate at API boundary (DTOs) with DataAnnotations/FluentValida
     resources: [
       { type: 'article', title: 'DI in ASP.NET Core', url: 'https://learn.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection' },
     ],
-    detailedExplanation: `Dependency Injection (DI) হলো Inversion of Control (IoC) principle এর implementation। class নিজে dependencies create করে না, বাইরে থেকে inject করা হয়।
+    detailedExplanation: `Dependency Injection (DI) is an implementation of Inversion of Control where a class receives its dependencies from external sources rather than creating them itself. ASP.NET Core has a built-in DI container. You register services in Program.cs (e.g., builder.Services.AddScoped<IBookService, BookService>()) and they are automatically injected via constructor parameters.
 
-ASP.NET Core এ built-in DI container আছে। Program.cs এ services register করেন: builder.Services.AddScoped<IBookService, BookService>(). তারপর constructor parameters এ inject হয়।
+There are three lifetimes: Singleton (one instance for the entire app lifetime), Scoped (one instance per HTTP request), and Transient (a new instance every time it is requested). Use Singleton for stateless or expensive-to-create services, Scoped for DbContext and per-request state, and Transient for lightweight stateless services.
 
-তিনটি lifetime: Singleton (একটি instance পুরো app lifetime), Scoped (একটি instance per HTTP request), Transient (প্রতিবার request এ নতুন instance)।
-
-Singleton ব্যবহার করুন stateless services বা expensive-to-create objects এর জন্য (HttpClient factory, configuration)। Scoped ব্যবহার করুন DbContext, per-request state এর জন্য। Transient ব্যবহার করুন lightweight, stateless services এর জন্য।
-
-Common mistake: Singleton service এ Scoped service inject করা (Captive Dependency)। Singleton সারা lifetime বেঁচে থাকে, কিন্তু Scoped service request শেষে dispose হওয়া উচিত। এতে memory leak এবং stale data হয়। ASP.NET Core এ ValidateScopes option enable করলে এটা detect হয়।`,
+The most critical mistake is injecting a Scoped service into a Singleton (Captive Dependency). The Singleton lives forever, but the Scoped service should be disposed after each request, leading to memory leaks and stale data. Enable ValidateScopes in development to detect this.`,
     keyConcepts: [
       'Singleton = one instance for app lifetime; Scoped = one per request; Transient = new every time',
       'Constructor injection is the primary pattern - dependencies declared as constructor parameters',
       'Never inject Scoped service into Singleton (Captive Dependency) - causes memory leaks',
-      'Register interface → implementation: AddScoped<IService, ServiceImpl>()',
-      'IServiceProvider can resolve services manually but prefer constructor injection (Service Locator is anti-pattern)',
     ],
     commonMistakes: [
-      'Injecting Scoped (DbContext) into Singleton service - stale data and disposed context errors',
-      'Using Service Locator pattern (IServiceProvider.GetService) instead of constructor injection',
+      'Injecting Scoped (DbContext) into Singleton - stale data and disposed context errors',
+      'Using Service Locator pattern instead of constructor injection',
       'Registering DbContext as Singleton - not thread-safe, causes concurrency errors',
-      'Not understanding that Transient services are created every time - avoid for expensive objects',
-      'Circular dependency: A depends on B, B depends on A - restructure using Lazy<T> or redesign',
     ],
     codeExamples: [
       {
@@ -322,12 +266,10 @@ public class BookService : IBookService
         return dto;
     }
 }`,
-        explanation: 'ICacheService Singleton কারণ Redis connection shared হতে পারে। IBookService এবং Repository Scoped কারণ DbContext Scoped। IEmailSender Transient কারণ lightweight এবং stateless।',
+        explanation: 'ICacheService is Singleton because the Redis connection is shared. IBookService and Repository are Scoped because DbContext is Scoped. IEmailSender is Transient because it is lightweight and stateless.',
         keyPoints: [
-          'Dependencies flow from outer (Singleton) to inner (Scoped/Transient)',
           'Never depend on shorter-lived services from longer-lived ones',
           'Constructor injection makes dependencies explicit and testable',
-          'ILogger<T> is automatically available in DI - just add to constructor',
         ],
       },
     ],
@@ -390,14 +332,14 @@ Fix 2 (If Singleton needed): Use IServiceScopeFactory
           'One instance per thread',
         ],
         correctAnswer: 2,
-        explanation: 'Scoped creates one instance per HTTP request (per DI scope). All services within the same request share the same Scoped instance.',
+        explanation: 'Scoped creates one instance per HTTP request, shared by all services within that request.',
         difficulty: 'easy',
       },
       {
         question: 'Which DI lifetime should be used for DbContext?',
         options: ['Singleton', 'Transient', 'Scoped', 'None - use new directly'],
         correctAnswer: 2,
-        explanation: 'DbContext should be Scoped (one per HTTP request). Singleton is not thread-safe. Transient creates unnecessary instances.',
+        explanation: 'DbContext should be Scoped because Singleton is not thread-safe and Transient creates unnecessary instances.',
         difficulty: 'easy',
       },
       {
@@ -409,7 +351,7 @@ Fix 2 (If Singleton needed): Use IServiceScopeFactory
           'A dependency on an external service',
         ],
         correctAnswer: 1,
-        explanation: 'Captive dependency: Singleton holds a Scoped service, keeping it alive beyond the request scope → stale data, disposed context errors.',
+        explanation: 'A Singleton holding a Scoped service keeps it alive beyond the request scope, causing stale data or disposed context errors.',
         difficulty: 'hard',
       },
       {
@@ -421,42 +363,19 @@ Fix 2 (If Singleton needed): Use IServiceScopeFactory
           'It uses more memory',
         ],
         correctAnswer: 1,
-        explanation: 'Service Locator (GetService<T>) hides what a class depends on. Constructor injection makes dependencies explicit, enabling compile-time checking and easier mocking in tests.',
+        explanation: 'Service Locator hides dependencies, whereas constructor injection makes them explicit for compile-time checking and easier testing.',
         difficulty: 'medium',
-      },
-      {
-        question: 'What happens with this registration?',
-        options: [
-          'Works fine',
-          'Singleton captures Scoped DbContext → ObjectDisposedException after first request',
-          'Compile error',
-          'DbContext becomes Singleton automatically',
-        ],
-        correctAnswer: 1,
-        codeSnippet: `services.AddSingleton<IUserService, UserService>();
-services.AddDbContext<AppDb>(); // Scoped by default
-// UserService has constructor: UserService(AppDb db)`,
-        explanation: 'Singleton UserService captures the first request\'s Scoped AppDb. After that request ends, AppDb is disposed but UserService still holds it → ObjectDisposedException on next use.',
-        difficulty: 'hard',
       },
     ],
     interviewQuestions: [
       {
         question: 'Explain Dependency Injection and its benefits. Why is it important?',
-        answer: `Dependency Injection is a design pattern where a class receives its dependencies from external sources rather than creating them internally. In ASP.NET Core, the built-in DI container manages object creation and lifetime.
+        answer: `Dependency Injection is a design pattern where a class receives its dependencies from external sources rather than creating them internally. In ASP.NET Core, the built-in DI container manages object creation, lifetime, and disposal automatically.
 
-Benefits:
-1. Loose Coupling: Classes depend on interfaces, not concrete implementations. You can swap implementations without changing consuming code.
-2. Testability: Dependencies can be mocked in unit tests. Without DI, testing a service that directly creates a DbContext is very difficult.
-3. Single Responsibility: Classes don't need to know how to create their dependencies.
-4. Lifetime Management: The container manages when objects are created and disposed.
-5. Configuration Centralization: All service registrations are in one place (Program.cs).
-
-Without DI, you'd need to manually create and pass dependencies through the entire object graph, leading to tightly coupled, hard-to-test code.`,
+The main benefits are loose coupling (classes depend on interfaces, not concrete types, so implementations can be swapped), testability (dependencies can be mocked in unit tests), and centralized configuration (all registrations live in Program.cs). Without DI, you would manually create and pass dependencies through the entire object graph, leading to tightly coupled and hard-to-test code.`,
         followUp: [
           'What are the three DI lifetimes in ASP.NET Core?',
-          'How does the DI container resolve dependencies with multiple constructors?',
-          'What alternatives exist to the built-in DI container (Autofac, Ninject)?',
+          'What is a Captive Dependency and how do you avoid it?',
         ],
       },
     ],
@@ -471,30 +390,20 @@ Without DI, you'd need to manually create and pass dependencies through the enti
     resources: [
       { type: 'article', title: 'SOLID Principles', url: 'https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design' },
     ],
-    detailedExplanation: `SOLID হলো 5টি OOP design principle যা maintainable, extensible, testable code লিখতে সাহায্য করে। Cefalo clean code heavily emphasize করে।
+    detailedExplanation: `SOLID is a set of five OOP design principles that help write maintainable, extensible, and testable code. SRP (Single Responsibility) means a class should have only one reason to change. OCP (Open/Closed) means you extend behavior by adding new classes, not modifying existing ones. LSP (Liskov Substitution) means subtypes must be usable wherever their base type is expected without breaking behavior.
 
-S - Single Responsibility: একটি class এর একটিই reason to change থাকা উচিত। UserService শুধু user logic handle করবে, email sending আলাদা IEmailService এ থাকবে।
+ISP (Interface Segregation) means clients should not be forced to depend on methods they do not use -- prefer many small, specific interfaces over one large general-purpose one. DIP (Dependency Inversion) means high-level modules should depend on abstractions (interfaces), not concrete low-level implementations.
 
-O - Open/Closed: Software entities extension এর জন্য open কিন্তু modification এর জন্য closed হওয়া উচিত। নতুন behavior যোগ করতে existing code modify না করে inheritance/interface দিয়ে extend করুন।
-
-L - Liskov Substitution: Subclass parent class এর জায়গায় ব্যবহারযোগ্য হতে হবে behavior না ভেঙে। Square extends Rectangle করলে setWidth() এ height ও change হয় - এটা LSP violation।
-
-I - Interface Segregation: Client যা use করে না তার উপর depend করা উচিত না। একটি IWorker interface এ Work() এবং Eat() থাকলে Robot class এর Eat() implement করতে হবে - violation! আলাদা IWorkable, IFeedable interface করুন।
-
-D - Dependency Inversion: High-level modules low-level modules এর উপর depend করবে না। দুটোই abstractions (interfaces) এর উপর depend করবে। Service directly Repository class ব্যবহার না করে IRepository interface ব্যবহার করবে।`,
+In practice, SRP and DIP are the most impactful. Extract separate services for distinct responsibilities, and always depend on interfaces so implementations can be swapped and tested independently.`,
     keyConcepts: [
       'SRP: One class = one responsibility = one reason to change',
-      'OCP: Add new behavior via new classes/interfaces, not modifying existing code (Strategy pattern)',
-      'LSP: Subtypes must be substitutable for their base types without breaking behavior',
-      'ISP: Many specific interfaces are better than one general-purpose interface',
+      'OCP: Add new behavior via new classes/interfaces, not by modifying existing code',
       'DIP: Depend on abstractions (interfaces), not concrete implementations',
     ],
     commonMistakes: [
-      'Thinking SRP means "one method per class" - it means one REASON TO CHANGE',
-      'Over-engineering with too many tiny interfaces (ISP taken too far)',
-      'Violating LSP with exceptions in overridden methods (throw NotImplementedException)',
-      'Confusing DIP with DI - DIP is the principle, DI is a technique to achieve it',
-      'Not applying SOLID pragmatically - these are guidelines, not absolute rules',
+      'Thinking SRP means "one method per class" - it means one reason to change',
+      'Violating LSP by throwing NotImplementedException in overridden methods',
+      'Confusing DIP (the principle) with DI (a technique to achieve it)',
     ],
     codeExamples: [
       {
@@ -544,11 +453,10 @@ public class StudentDiscount : IDiscountStrategy
     public decimal Calculate(decimal price) => price * 0.3m;
 }
 // Add NewDiscount without modifying existing code!`,
-        explanation: 'SRP: UserService শুধু user registration handle করে, email পাঠানোর responsibility IEmailService এ। OCP: Strategy pattern দিয়ে নতুন discount type যোগ করতে existing code modify করতে হয় না।',
+        explanation: 'SRP fix: UserService only handles registration; email is delegated to IEmailService. OCP fix: Strategy pattern lets you add new discount types without modifying existing code.',
         keyPoints: [
           'SRP fix: Extract responsibilities into separate services with clear interfaces',
           'OCP fix: Use Strategy pattern or polymorphism for varying behavior',
-          'Both fixes make code testable - each service can be mocked independently',
         ],
       },
     ],
@@ -606,21 +514,21 @@ Benefits: Each service testable independently, new tax rules = new ITaxCalculato
         question: 'What does the Single Responsibility Principle (SRP) state?',
         options: ['A class should have only one method', 'A class should have only one reason to change', 'A class should only inherit from one base class', 'A class should only implement one interface'],
         correctAnswer: 1,
-        explanation: 'SRP says a class should have one, and only one, reason to change. This means one responsibility or one axis of change.',
+        explanation: 'SRP means a class should have one, and only one, reason to change.',
         difficulty: 'easy',
       },
       {
         question: 'Which SOLID principle does the Strategy pattern primarily support?',
         options: ['SRP', 'Open/Closed Principle', 'Liskov Substitution', 'Interface Segregation'],
         correctAnswer: 1,
-        explanation: 'Strategy pattern allows adding new behaviors (strategies) without modifying existing code - the essence of Open/Closed Principle.',
+        explanation: 'Strategy pattern adds new behaviors without modifying existing code, which is the Open/Closed Principle.',
         difficulty: 'medium',
       },
       {
         question: 'Which principle is violated when a subclass throws NotImplementedException?',
         options: ['SRP', 'OCP', 'Liskov Substitution Principle', 'DIP'],
         correctAnswer: 2,
-        explanation: 'LSP says subtypes must be substitutable for their base type. Throwing NotImplementedException means the subclass cannot fulfill the base class contract.',
+        explanation: 'LSP requires subtypes to be substitutable for their base type without breaking the contract.',
         difficulty: 'medium',
       },
       {
@@ -632,25 +540,18 @@ Benefits: Each service testable independently, new tax rules = new ITaxCalculato
           'Always depend on concrete implementations for performance',
         ],
         correctAnswer: 1,
-        explanation: 'DIP states both high-level and low-level modules should depend on abstractions (interfaces). This decouples them and allows independent changes.',
+        explanation: 'DIP states both high-level and low-level modules should depend on abstractions (interfaces), not concrete classes.',
         difficulty: 'medium',
       },
     ],
     interviewQuestions: [
       {
         question: 'Explain SOLID principles with real-world C# examples.',
-        answer: `S - Single Responsibility: A UserService should only handle user CRUD, not send emails or generate reports. Extract IEmailService and IReportService.
+        answer: `SRP: A UserService should only handle user CRUD, not send emails. Extract IEmailService for that. OCP: Instead of switch/if-else for payment methods, create an IPaymentProcessor interface with separate implementations for each method. Adding a new payment type means adding a new class, not modifying existing code.
 
-O - Open/Closed: Instead of switch/if-else for payment methods (Credit, PayPal, Crypto), create IPaymentProcessor interface with implementations. Adding a new payment method = adding a new class, not modifying existing code.
-
-L - Liskov Substitution: If you have IReadOnlyCollection<T> and a mutable List<T>, code expecting read-only behavior won't break. But if Square extends Rectangle and overrides SetWidth to also set Height, client code expecting independent width/height breaks.
-
-I - Interface Segregation: Instead of one IAnimal with Fly(), Swim(), Walk(), create IFlyable, ISwimmable, IWalkable. A Dog only implements IWalkable, ISwimmable.
-
-D - Dependency Inversion: Controller depends on IOrderService (interface), not OrderService (class). This allows unit testing with mock IOrderService and swapping implementations.`,
+LSP: If Square extends Rectangle and overrides SetWidth to also change Height, client code expecting independent dimensions breaks. ISP: Instead of one IAnimal with Fly(), Swim(), Walk(), create IFlyable, ISwimmable, IWalkable so each class only implements what it needs. DIP: Controllers depend on IOrderService (interface), not the concrete OrderService, enabling unit testing with mocks.`,
         followUp: [
           'Which SOLID principle do you find hardest to apply in practice?',
-          'How do SOLID principles relate to Design Patterns?',
           'Can you over-apply SOLID? Give an example.',
         ],
       },
@@ -666,27 +567,20 @@ D - Dependency Inversion: Controller depends on IOrderService (interface), not O
     resources: [
       { type: 'article', title: 'Repository Pattern', url: 'https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/infrastructure-persistence-layer-design' },
     ],
-    detailedExplanation: `Repository Pattern data access logic কে abstraction layer এর পেছনে encapsulate করে। Service layer সরাসরি DbContext ব্যবহার না করে IRepository interface ব্যবহার করে। এতে data source swap করা সহজ এবং unit testing এ mock করা যায়।
+    detailedExplanation: `The Repository Pattern encapsulates data access logic behind an abstraction layer. Instead of using DbContext directly, the service layer depends on IRepository interfaces. This makes data sources swappable and enables mock-based unit testing.
 
-Generic Repository (IRepository<T>) common CRUD operations abstract করে: GetByIdAsync, GetAllAsync, AddAsync, UpdateAsync, DeleteAsync। Specific repositories (IBookRepository) domain-specific queries add করে: GetBooksByAuthorAsync, GetTopRatedBooksAsync।
+A Generic Repository (IRepository<T>) provides standard CRUD operations (GetByIdAsync, AddAsync, etc.), while Specific Repositories (e.g., IBookRepository) add domain-specific queries. The Unit of Work pattern coordinates changes across multiple repositories in a single transaction. EF Core's DbContext already acts as a Unit of Work since SaveChanges() commits all tracked changes atomically.
 
-Unit of Work pattern multiple repositories এর changes একটি transaction এ commit করে। EF Core এর DbContext already Unit of Work হিসেবে কাজ করে - SaveChanges() সব changes একটি transaction এ save করে।
-
-Debate: কিছু developer মনে করে EF Core এর সাথে Repository Pattern redundant কারণ DbContext নিজেই repository + unit of work। Valid point, কিন্তু Repository Pattern এর benefit হলো: (1) Service layer DbContext এর উপর সরাসরি depend করে না (testable), (2) Complex queries encapsulate হয়, (3) Future এ ORM switch করা সহজ।
-
-Cefalo তে generic repository + specific repository combination ব্যবহার হয়। Generic repo CRUD দেয়, specific repo domain queries দেয়।`,
+Some developers consider Repository redundant with EF Core since DbContext is already a repository + unit of work. However, it provides testability (services do not depend on DbContext directly) and encapsulates complex queries in one place.`,
     keyConcepts: [
       'Repository abstracts data access - services use IRepository, not DbContext directly',
       'Generic Repository provides CRUD; Specific Repository adds domain-specific queries',
       'Unit of Work coordinates multiple repository changes in a single transaction',
-      'EF Core DbContext is already a Unit of Work (SaveChanges = transaction commit)',
-      'Repository pattern enables unit testing by allowing mock implementations',
     ],
     commonMistakes: [
-      'Making the generic repository too generic - leaking IQueryable to service layer defeats the purpose',
-      'Not creating specific repositories for complex queries - everything goes through generic CRUD',
-      'Calling SaveChanges in every repository method - should be called once via Unit of Work',
-      'Over-abstracting when EF Core is sufficient - evaluate if the project really needs Repository pattern',
+      'Leaking IQueryable to the service layer - defeats the purpose of the abstraction',
+      'Calling SaveChanges in every repository method instead of once via Unit of Work',
+      'Over-abstracting when EF Core is sufficient for simple CRUD apps',
     ],
     codeExamples: [
       {
@@ -754,12 +648,10 @@ public class BookService : IBookService
         await _uow.SaveChangesAsync(); // Single transaction
     }
 }`,
-        explanation: 'IUnitOfWork multiple repositories coordinate করে। SaveChangesAsync একবার call করলে সব changes একটি transaction এ commit হয়। Service layer শুধু IUnitOfWork জানে, DbContext জানে না।',
+        explanation: 'IUnitOfWork coordinates multiple repositories. A single SaveChangesAsync call commits all changes atomically. The service layer only knows IUnitOfWork, not DbContext.',
         keyPoints: [
-          'Generic IRepository<T> provides CRUD, specific IBookRepository adds domain queries',
           'UnitOfWork holds all repositories and coordinates SaveChanges',
           'Service depends on IUnitOfWork - easily mockable for unit tests',
-          'SaveChanges called once at the end ensures all changes are atomic',
         ],
       },
     ],
@@ -818,7 +710,7 @@ class PostRepository : Repository<Post>, IPostRepository
           'Connection pooling',
         ],
         correctAnswer: 1,
-        explanation: 'Repository pattern abstracts data access behind interfaces. Services depend on IRepository, not DbContext, enabling mock-based unit testing.',
+        explanation: 'Repository abstracts data access behind interfaces, enabling mock-based unit testing.',
         difficulty: 'easy',
       },
       {
@@ -830,7 +722,7 @@ class PostRepository : Repository<Post>, IPostRepository
           'To validate entity state',
         ],
         correctAnswer: 1,
-        explanation: 'Unit of Work groups multiple repository operations into a single transaction. SaveChanges commits all changes atomically.',
+        explanation: 'Unit of Work groups multiple repository operations into a single atomic transaction.',
         difficulty: 'medium',
       },
       {
@@ -842,31 +734,18 @@ class PostRepository : Repository<Post>, IPostRepository
           'Only with AsNoTracking',
         ],
         correctAnswer: 1,
-        explanation: 'Exposing IQueryable leaks LINQ-to-SQL details to the service layer. Repositories should expose specific methods that return materialized results.',
+        explanation: 'Exposing IQueryable leaks ORM details to the service layer, defeating the abstraction purpose.',
         difficulty: 'hard',
       },
     ],
     interviewQuestions: [
       {
         question: 'Is Repository pattern necessary with EF Core? What are the pros and cons?',
-        answer: `This is a debated topic. Arguments for both sides:
+        answer: `Arguments for: testability (services can be unit tested with mocked IRepository without a database), encapsulation (complex queries live in repository methods, not scattered across services), and ORM independence (you could swap EF Core for Dapper if needed).
 
-FOR Repository Pattern:
-1. Testability: Services can be unit tested with mocked IRepository without an actual database.
-2. Encapsulation: Complex queries are encapsulated in repository methods, not scattered across services.
-3. ORM Independence: Though rarely done, you could swap EF Core for Dapper or another ORM.
-4. Single Responsibility: Data access logic separated from business logic.
-
-AGAINST:
-1. Redundancy: EF Core's DbContext already implements Repository (DbSet) and Unit of Work (SaveChanges).
-2. Leaky Abstractions: It's hard to abstract away EF Core's features (Include, AsNoTracking) properly.
-3. More Code: Additional interfaces and classes for little benefit in simple CRUD apps.
-4. IQueryable Dilemma: Either expose it (leaky abstraction) or don't (limited flexibility).
-
-My recommendation: Use Repository for complex domains with multiple data sources or heavy testing requirements. Skip it for simple CRUD apps where EF Core is sufficient.`,
+Arguments against: EF Core's DbContext already implements Repository (DbSet) and Unit of Work (SaveChanges), adding another layer is redundant code, and it is hard to abstract away EF Core features like Include and AsNoTracking without leaky abstractions. Use Repository for complex domains with heavy testing needs; skip it for simple CRUD apps.`,
         followUp: [
-          'How do you handle complex queries that need multiple joins in a repository?',
-          'Would you use the Specification pattern with Repository?',
+          'How do you handle complex queries with multiple joins in a repository?',
           'How does CQRS relate to the Repository pattern?',
         ],
       },
@@ -883,33 +762,20 @@ My recommendation: Use Repository for complex domains with multiple data sources
       { type: 'video', title: 'Clean Architecture', url: 'https://www.youtube.com/watch?v=dK4Yb6-LxAk' },
       { type: 'article', title: 'Clean Architecture in .NET', url: 'https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/common-web-application-architectures' },
     ],
-    detailedExplanation: `Clean Architecture (Robert C. Martin) হলো একটি architectural pattern যেখানে business logic center এ থাকে এবং external concerns (DB, UI, frameworks) periphery তে থাকে। Dependency Rule: inner layers কখনো outer layers কে জানে না।
+    detailedExplanation: `Clean Architecture places business logic at the center and pushes external concerns (database, UI, frameworks) to the periphery. The key rule is that dependencies always point inward: inner layers never know about outer layers. This is achieved through Dependency Inversion -- the Application layer defines interfaces, and the Infrastructure layer implements them.
 
-Layer structure (inside → outside):
-1. Domain/Entities: Business objects, value objects, enums। কোন dependency নেই।
-2. Application/Use Cases: Business logic, interfaces (IRepository, IEmailService), DTOs। শুধু Domain এর উপর depend করে।
-3. Infrastructure: Database implementations, external API clients, file storage। Application interfaces implement করে।
-4. Presentation/API: Controllers, middleware, startup config। Infrastructure ও Application ব্যবহার করে।
+The layers from inside out are: Domain (entities, value objects, zero dependencies), Application (services, interfaces, DTOs, depends only on Domain), Infrastructure (EF Core, external APIs, implements Application interfaces), and API/Presentation (controllers, DI wiring, references all layers).
 
-Dependency Rule: Dependencies শুধু inward point করে। Infrastructure, Domain কে জানে কিন্তু Domain, Infrastructure কে জানে না। এটা DIP (Dependency Inversion) দিয়ে achieve হয় - Application layer interfaces define করে, Infrastructure layer implement করে।
-
-Project structure:
-- MyApp.Domain (class library) → entities, value objects, domain events
-- MyApp.Application (class library, ref: Domain) → services, interfaces, DTOs, validation
-- MyApp.Infrastructure (class library, ref: Application) → EF Core, repositories, email, external APIs
-- MyApp.Api (web project, ref: all) → controllers, middleware, DI registration`,
+In a .NET solution, this translates to 4 projects with explicit project references enforcing the dependency rule. If Domain accidentally references Infrastructure, the build fails, giving you compile-time safety.`,
     keyConcepts: [
-      'Dependency Rule: Dependencies point inward. Domain knows nothing about Infrastructure.',
-      'Domain layer has zero dependencies - pure business logic, entities, value objects',
+      'Dependency Rule: Dependencies point inward -- Domain knows nothing about Infrastructure',
       'Application layer defines interfaces (ports); Infrastructure layer implements them (adapters)',
       'DI registration happens in the outermost layer (API/Presentation)',
-      'Clean Architecture makes business logic testable independent of database, UI, or frameworks',
     ],
     commonMistakes: [
       'Domain layer referencing Infrastructure (EF Core, HttpClient) - violates dependency rule',
-      'Putting business logic in controllers instead of Application/Service layer',
+      'Putting business logic in controllers instead of the Application/Service layer',
       'Over-engineering small projects with full Clean Architecture when N-tier would suffice',
-      'Not clearly defining the boundary between Application and Domain layers',
     ],
     codeExamples: [
       {
@@ -972,12 +838,10 @@ public class BookRepository : IBookRepository
 // MyApp.Api/Program.cs
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<BookService>();`,
-        explanation: 'Domain → Application → Infrastructure → API। প্রতিটি layer শুধু তার inner layer কে reference করে। BookService (Application) IBookRepository interface জানে, BookRepository (Infrastructure) implement করে।',
+        explanation: 'Dependencies flow Domain to Application to Infrastructure to API. Each layer only references its inner layer. BookService (Application) knows IBookRepository; BookRepository (Infrastructure) implements it.',
         keyPoints: [
-          'Domain has ZERO NuGet references - pure C# only',
-          'Application defines interfaces, Infrastructure implements them',
-          'DI wiring happens in the API layer (outermost)',
-          'Domain entities have behavior (UpdatePrice with validation), not just properties',
+          'Domain has zero NuGet references - pure C# only',
+          'Application defines interfaces; Infrastructure implements them',
         ],
       },
     ],
@@ -1038,49 +902,38 @@ Api/Controllers/TasksController.cs:
         question: 'In Clean Architecture, which direction do dependencies point?',
         options: ['Outward (Domain → Infrastructure)', 'Inward (Infrastructure → Domain)', 'Both directions', 'Horizontal only'],
         correctAnswer: 1,
-        explanation: 'Dependencies always point inward. Outer layers (Infrastructure, UI) depend on inner layers (Application, Domain). Domain has zero outward dependencies.',
+        explanation: 'Dependencies always point inward -- outer layers depend on inner layers, and Domain has zero outward dependencies.',
         difficulty: 'easy',
       },
       {
         question: 'Which layer defines repository interfaces?',
         options: ['Domain', 'Application', 'Infrastructure', 'Presentation'],
         correctAnswer: 1,
-        explanation: 'Application layer defines interfaces (ports). Infrastructure layer provides implementations (adapters). This follows Dependency Inversion Principle.',
+        explanation: 'The Application layer defines interfaces (ports) and Infrastructure provides implementations (adapters).',
         difficulty: 'medium',
       },
       {
         question: 'Where should EF Core DbContext be defined?',
         options: ['Domain', 'Application', 'Infrastructure', 'API'],
         correctAnswer: 2,
-        explanation: 'DbContext is an Infrastructure concern. Domain and Application should not know about EF Core. Only Infrastructure implements data access.',
+        explanation: 'DbContext is an Infrastructure concern; Domain and Application should not know about EF Core.',
         difficulty: 'easy',
       },
       {
         question: 'Where should business rules (e.g., "price must be positive") live?',
         options: ['Controller', 'Domain entity', 'Database constraint', 'Middleware'],
         correctAnswer: 1,
-        explanation: 'Business rules belong in Domain entities. The entity enforces its own invariants. This is a core DDD principle supported by Clean Architecture.',
+        explanation: 'Business rules belong in Domain entities, which enforce their own invariants.',
         difficulty: 'medium',
       },
     ],
     interviewQuestions: [
       {
         question: 'Explain Clean Architecture and how you would structure a .NET project.',
-        answer: `Clean Architecture separates an application into concentric layers where dependencies point inward:
+        answer: `Clean Architecture separates an application into concentric layers where dependencies point inward. Domain (innermost) contains entities and value objects with zero external dependencies. Application contains services, DTOs, and interfaces. Infrastructure implements those interfaces with EF Core, external APIs, etc. API/Presentation (outermost) handles controllers, middleware, and DI wiring.
 
-1. Domain Layer (innermost): Contains entities, value objects, domain events, and domain services. Has ZERO external dependencies - pure C# only. Entities contain behavior, not just data (e.g., Order.AddItem validates business rules).
-
-2. Application Layer: Contains use cases (services), DTOs, interfaces (IRepository, IEmailService), and validators. Depends only on Domain. Orchestrates domain logic.
-
-3. Infrastructure Layer: Implements Application interfaces. Contains EF Core DbContext, repositories, external API clients, file storage, email sending. Depends on Application.
-
-4. API/Presentation Layer (outermost): Controllers, middleware, DI configuration. References all layers for wiring.
-
-The key benefit is testability - Domain and Application can be fully tested without any database or external service. Infrastructure implementations are swappable via DI.
-
-In a .NET solution: 4 projects (.csproj) with explicit project references enforcing the dependency rule. If Domain accidentally references Infrastructure, the build fails.`,
+In a .NET solution this means 4 projects with explicit project references enforcing the dependency rule -- if Domain accidentally references Infrastructure, the build fails. The key benefit is testability: Domain and Application can be fully tested without any database or external service, and Infrastructure implementations are swappable via DI.`,
         followUp: [
-          'How does Clean Architecture relate to Hexagonal (Ports & Adapters) Architecture?',
           'When would you NOT use Clean Architecture?',
           'How do you handle cross-cutting concerns (logging, caching) in Clean Architecture?',
         ],

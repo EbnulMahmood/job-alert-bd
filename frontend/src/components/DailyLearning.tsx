@@ -3,7 +3,7 @@ import {
   Play, CheckCircle, Circle, Clock, ExternalLink,
   ChevronDown, ChevronUp, Flame, Trophy, BookOpen,
   FileText, Video, Code, Briefcase, RotateCcw,
-  Lightbulb, AlertTriangle, MessageSquare, Target
+  Lightbulb, AlertTriangle, MessageSquare
 } from 'lucide-react'
 import type { CompanyTrack } from '../data/learningTypes'
 import useLearningProgress from '../hooks/useLearningProgress'
@@ -301,45 +301,45 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
             </div>
           )}
 
-          {/* Detailed Explanation */}
-          {activeTopic.detailedExplanation && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary-600" />
-                Detailed Explanation
+          {/* Key Concepts - compact summary at top */}
+          {activeTopic.keyConcepts && activeTopic.keyConcepts.length > 0 && (
+            <div className="mb-6 bg-blue-50 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2 text-sm">
+                <Lightbulb className="w-4 h-4 text-blue-600" />
+                Key Takeaways
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                {activeTopic.detailedExplanation}
-              </div>
+              <ul className="space-y-1">
+                {activeTopic.keyConcepts.map((concept, i) => (
+                  <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 flex-shrink-0 text-xs">●</span>
+                    {concept}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          {/* Key Concepts */}
-          {activeTopic.keyConcepts && activeTopic.keyConcepts.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                Key Concepts
-              </h3>
-              <div className="grid gap-2">
-                {activeTopic.keyConcepts.map((concept, i) => (
-                  <div key={i} className="flex items-start gap-2 p-2 bg-yellow-50 rounded-lg">
-                    <Target className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{concept}</span>
-                  </div>
-                ))}
+          {/* Detailed Explanation - collapsible */}
+          {activeTopic.detailedExplanation && (
+            <details className="mb-6">
+              <summary className="flex items-center gap-2 cursor-pointer font-medium text-gray-900 hover:text-primary-600">
+                <BookOpen className="w-4 h-4 text-primary-600" />
+                Read Explanation
+              </summary>
+              <div className="mt-3 bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {activeTopic.detailedExplanation}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Code Examples */}
           {activeTopic.codeExamples && activeTopic.codeExamples.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <details className="mb-6">
+              <summary className="flex items-center gap-2 cursor-pointer font-medium text-gray-900 hover:text-primary-600">
                 <Code className="w-4 h-4 text-blue-600" />
-                Code Examples
-              </h3>
-              <div className="space-y-4">
+                Code Examples ({activeTopic.codeExamples.length})
+              </summary>
+              <div className="mt-3 space-y-4">
                 {activeTopic.codeExamples.map((example, i) => (
                   <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-gray-800 text-gray-200 px-4 py-2 flex items-center justify-between">
@@ -371,17 +371,17 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Practice Problems */}
           {activeTopic.practiceProblems && activeTopic.practiceProblems.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <Target className="w-4 h-4 text-red-600" />
-                Practice Problems
-              </h3>
-              <div className="space-y-4">
+            <details className="mb-6">
+              <summary className="flex items-center gap-2 cursor-pointer font-medium text-gray-900 hover:text-primary-600">
+                <Briefcase className="w-4 h-4 text-red-600" />
+                Practice Problems ({activeTopic.practiceProblems.length})
+              </summary>
+              <div className="mt-3 space-y-4">
                 {activeTopic.practiceProblems.map((problem, i) => {
                   const diffColor = {
                     easy: 'bg-green-100 text-green-700',
@@ -472,7 +472,7 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
                   )
                 })}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Tasks */}
@@ -631,12 +631,12 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
 
           {/* Interview Questions */}
           {activeTopic.interviewQuestions && activeTopic.interviewQuestions.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <details className="mb-6">
+              <summary className="flex items-center gap-2 cursor-pointer font-medium text-gray-900 hover:text-primary-600">
                 <MessageSquare className="w-4 h-4 text-purple-600" />
-                Interview Questions
-              </h3>
-              <div className="space-y-3">
+                Interview Questions ({activeTopic.interviewQuestions.length})
+              </summary>
+              <div className="mt-3 space-y-3">
                 {activeTopic.interviewQuestions.map((iq, i) => (
                   <details key={i} className="border border-gray-200 rounded-lg overflow-hidden">
                     <summary className="p-3 bg-purple-50 cursor-pointer hover:bg-purple-100 font-medium text-sm text-gray-800">
@@ -658,17 +658,17 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
                   </details>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Common Mistakes */}
           {activeTopic.commonMistakes && activeTopic.commonMistakes.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <details className="mb-6">
+              <summary className="flex items-center gap-2 cursor-pointer font-medium text-gray-900 hover:text-primary-600">
                 <AlertTriangle className="w-4 h-4 text-orange-500" />
-                Common Mistakes
-              </h3>
-              <div className="grid gap-2">
+                Common Mistakes ({activeTopic.commonMistakes.length})
+              </summary>
+              <div className="mt-3 grid gap-2">
                 {activeTopic.commonMistakes.map((mistake, i) => (
                   <div key={i} className="flex items-start gap-2 p-2 bg-orange-50 rounded-lg">
                     <span className="text-orange-500 mt-0.5 flex-shrink-0">⚠</span>
@@ -676,7 +676,7 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Notes */}
