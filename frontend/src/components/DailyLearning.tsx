@@ -2,9 +2,10 @@ import { useState } from 'react'
 import {
   Play, CheckCircle, Circle, Clock, ExternalLink,
   ChevronDown, ChevronUp, Flame, Trophy, BookOpen,
-  FileText, Video, Code, Briefcase, RotateCcw
+  FileText, Video, Code, Briefcase, RotateCcw,
+  Lightbulb, AlertTriangle, MessageSquare, Target
 } from 'lucide-react'
-import type { CompanyTrack } from '../data/learningContent'
+import type { CompanyTrack } from '../data/learningTypes'
 import useLearningProgress from '../hooks/useLearningProgress'
 
 interface DailyLearningProps {
@@ -28,6 +29,8 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
   const [notes, setNotes] = useState('')
   const [showQuiz, setShowQuiz] = useState(false)
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({})
+  const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [quizScore, setQuizScore] = useState(0)
   const [showConfirmReset, setShowConfirmReset] = useState(false)
 
   const progress = getTrackProgress(track.companyName)
@@ -73,10 +76,8 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
     activeTopic.quiz.forEach((q, i) => {
       if (quizAnswers[i] === q.correctAnswer) correct++
     })
-    const score = Math.round((correct / activeTopic.quiz.length) * 100)
-    alert(`Quiz Score: ${score}% (${correct}/${activeTopic.quiz.length} correct)`)
-    setShowQuiz(false)
-    setQuizAnswers({})
+    setQuizScore(correct)
+    setQuizSubmitted(true)
   }
 
   const handleReset = () => {
@@ -300,32 +301,231 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
             </div>
           )}
 
+          {/* Detailed Explanation */}
+          {activeTopic.detailedExplanation && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary-600" />
+                Detailed Explanation
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {activeTopic.detailedExplanation}
+              </div>
+            </div>
+          )}
+
+          {/* Key Concepts */}
+          {activeTopic.keyConcepts && activeTopic.keyConcepts.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-500" />
+                Key Concepts
+              </h3>
+              <div className="grid gap-2">
+                {activeTopic.keyConcepts.map((concept, i) => (
+                  <div key={i} className="flex items-start gap-2 p-2 bg-yellow-50 rounded-lg">
+                    <Target className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{concept}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Code Examples */}
+          {activeTopic.codeExamples && activeTopic.codeExamples.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Code className="w-4 h-4 text-blue-600" />
+                Code Examples
+              </h3>
+              <div className="space-y-4">
+                {activeTopic.codeExamples.map((example, i) => (
+                  <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-800 text-gray-200 px-4 py-2 flex items-center justify-between">
+                      <span className="text-sm font-medium">{example.title}</span>
+                      <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{example.language}</span>
+                    </div>
+                    <pre className="bg-gray-900 text-gray-100 p-4 overflow-x-auto text-sm leading-relaxed">
+                      <code>{example.code}</code>
+                    </pre>
+                    {example.output && (
+                      <div className="bg-gray-100 px-4 py-2 border-t border-gray-200">
+                        <span className="text-xs text-gray-500 font-medium">Output:</span>
+                        <pre className="text-sm text-gray-800 mt-1">{example.output}</pre>
+                      </div>
+                    )}
+                    <div className="p-4 bg-white">
+                      <p className="text-sm text-gray-600">{example.explanation}</p>
+                      {example.keyPoints.length > 0 && (
+                        <ul className="mt-2 space-y-1">
+                          {example.keyPoints.map((point, j) => (
+                            <li key={j} className="text-xs text-gray-500 flex items-start gap-1">
+                              <span className="text-primary-500 mt-0.5">▸</span>
+                              {point}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Practice Problems */}
+          {activeTopic.practiceProblems && activeTopic.practiceProblems.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Target className="w-4 h-4 text-red-600" />
+                Practice Problems
+              </h3>
+              <div className="space-y-4">
+                {activeTopic.practiceProblems.map((problem, i) => {
+                  const diffColor = {
+                    easy: 'bg-green-100 text-green-700',
+                    medium: 'bg-yellow-100 text-yellow-700',
+                    hard: 'bg-red-100 text-red-700',
+                  }[problem.difficulty]
+
+                  return (
+                    <div key={i} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h4 className="font-semibold text-gray-900">{problem.title}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${diffColor}`}>
+                          {problem.difficulty}
+                        </span>
+                        {problem.companiesAsked && problem.companiesAsked.length > 0 && (
+                          <span className="text-xs text-gray-400">
+                            Asked at: {problem.companiesAsked.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{problem.description}</p>
+
+                      {/* Sample I/O */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gray-50 rounded p-3">
+                          <span className="text-xs font-medium text-gray-500">Sample Input:</span>
+                          <pre className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{problem.sampleInput}</pre>
+                        </div>
+                        <div className="bg-gray-50 rounded p-3">
+                          <span className="text-xs font-medium text-gray-500">Sample Output:</span>
+                          <pre className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{problem.sampleOutput}</pre>
+                        </div>
+                      </div>
+
+                      {/* Hints */}
+                      {problem.hints.length > 0 && (
+                        <details className="mb-3">
+                          <summary className="text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-700">
+                            💡 Hints ({problem.hints.length})
+                          </summary>
+                          <ul className="mt-2 space-y-1 pl-4">
+                            {problem.hints.map((hint, j) => (
+                              <li key={j} className="text-sm text-gray-600 list-disc">{hint}</li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+
+                      {/* Solution Approaches */}
+                      {problem.approaches.length > 0 && (
+                        <details>
+                          <summary className="text-sm font-medium text-green-600 cursor-pointer hover:text-green-700">
+                            🧠 Solution Approaches ({problem.approaches.length})
+                          </summary>
+                          <div className="mt-2 space-y-3">
+                            {problem.approaches.map((approach, j) => (
+                              <div key={j} className="bg-green-50 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="font-medium text-sm text-gray-900">{approach.name}</span>
+                                  <span className="text-xs bg-white px-2 py-0.5 rounded text-gray-500">
+                                    Time: {approach.timeComplexity}
+                                  </span>
+                                  <span className="text-xs bg-white px-2 py-0.5 rounded text-gray-500">
+                                    Space: {approach.spaceComplexity}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-2">{approach.explanation}</p>
+                                <pre className="bg-white rounded p-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">
+                                  {approach.pseudocode}
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+
+                      {/* Related Topics */}
+                      {problem.relatedTopics.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {problem.relatedTopics.map((topic, j) => (
+                            <span key={j} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Tasks */}
           <div className="mb-6">
             <h3 className="font-medium text-gray-900 mb-3">✅ Today's Tasks</h3>
             <div className="space-y-2">
               {activeTopic.tasks.map((task, i) => {
                 const isCompleted = topicProgress?.tasksCompleted?.[i] || false
+                const isDetailed = typeof task === 'object'
+                const taskTitle = isDetailed ? task.title : task
+                const taskDetail = isDetailed ? task : null
 
                 return (
-                  <button
-                    key={i}
-                    onClick={() => handleTaskToggle(i)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                      isCompleted
-                        ? 'bg-green-50 text-green-800'
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <div key={i}>
+                    <button
+                      onClick={() => handleTaskToggle(i)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                        isCompleted
+                          ? 'bg-green-50 text-green-800'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <span className={isCompleted ? 'line-through opacity-70' : ''}>
+                          {taskTitle}
+                        </span>
+                        {taskDetail && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded">{taskDetail.type}</span>
+                            <span className="text-xs text-gray-400">{taskDetail.estimatedTime}</span>
+                            {taskDetail.difficulty && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                taskDetail.difficulty === 'easy' ? 'bg-green-100 text-green-600' :
+                                taskDetail.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                                'bg-red-100 text-red-600'
+                              }`}>{taskDetail.difficulty}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                    {taskDetail && !isCompleted && (
+                      <div className="ml-11 mt-1 text-xs text-gray-500 space-y-1">
+                        <p>{taskDetail.description}</p>
+                        <p className="text-gray-400">Expected: {taskDetail.expectedOutcome}</p>
+                      </div>
                     )}
-                    <span className={isCompleted ? 'line-through opacity-70' : ''}>
-                      {task}
-                    </span>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -344,42 +544,138 @@ function DailyLearning({ track, onBack }: DailyLearningProps) {
 
               {showQuiz && (
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  {activeTopic.quiz.map((q, qIndex) => (
-                    <div key={qIndex} className="mb-4">
-                      <p className="font-medium text-gray-900 mb-2">
-                        {qIndex + 1}. {q.question}
-                      </p>
-                      <div className="space-y-2">
-                        {q.options.map((option, oIndex) => (
-                          <label
-                            key={oIndex}
-                            className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
-                              quizAnswers[qIndex] === oIndex
-                                ? 'bg-primary-100 border-primary-500'
-                                : 'bg-white hover:bg-gray-50'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name={`quiz-${qIndex}`}
-                              checked={quizAnswers[qIndex] === oIndex}
-                              onChange={() => setQuizAnswers({ ...quizAnswers, [qIndex]: oIndex })}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">{option}</span>
-                          </label>
-                        ))}
+                  {activeTopic.quiz.map((q, qIndex) => {
+                    const isAnswered = quizSubmitted && quizAnswers[qIndex] !== undefined
+                    const isCorrect = isAnswered && quizAnswers[qIndex] === q.correctAnswer
+
+                    return (
+                      <div key={qIndex} className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="font-medium text-gray-900">
+                            {qIndex + 1}. {q.question}
+                          </p>
+                          {q.difficulty && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              q.difficulty === 'easy' ? 'bg-green-100 text-green-600' :
+                              q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-red-100 text-red-600'
+                            }`}>{q.difficulty}</span>
+                          )}
+                        </div>
+                        {q.codeSnippet && (
+                          <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-sm mb-2 overflow-x-auto">
+                            <code>{q.codeSnippet}</code>
+                          </pre>
+                        )}
+                        <div className="space-y-2">
+                          {q.options.map((option, oIndex) => {
+                            let optionStyle = 'bg-white hover:bg-gray-50'
+                            if (quizSubmitted && quizAnswers[qIndex] !== undefined) {
+                              if (oIndex === q.correctAnswer) {
+                                optionStyle = 'bg-green-100 border-green-500 ring-1 ring-green-400'
+                              } else if (oIndex === quizAnswers[qIndex] && oIndex !== q.correctAnswer) {
+                                optionStyle = 'bg-red-100 border-red-500 ring-1 ring-red-400'
+                              }
+                            } else if (quizAnswers[qIndex] === oIndex) {
+                              optionStyle = 'bg-primary-100 border-primary-500'
+                            }
+
+                            return (
+                              <label
+                                key={oIndex}
+                                className={`flex items-center gap-2 p-2 rounded cursor-pointer ${optionStyle}`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`quiz-${qIndex}`}
+                                  checked={quizAnswers[qIndex] === oIndex}
+                                  onChange={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, [qIndex]: oIndex })}
+                                  disabled={quizSubmitted}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm">{option}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                        {quizSubmitted && q.explanation && (
+                          <div className={`mt-2 p-2 rounded text-sm ${isCorrect ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            <span className="font-medium">{isCorrect ? '✓ Correct!' : '✗ Incorrect.'}</span>{' '}
+                            {q.explanation}
+                          </div>
+                        )}
                       </div>
+                    )
+                  })}
+                  {!quizSubmitted ? (
+                    <button onClick={handleQuizSubmit} className="btn-primary mt-2">
+                      Submit Quiz
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Score: {quizScore}/{activeTopic.quiz.length}
+                      </span>
+                      <button
+                        onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); setQuizScore(0) }}
+                        className="btn-secondary text-sm"
+                      >
+                        Retry
+                      </button>
                     </div>
-                  ))}
-                  <button
-                    onClick={handleQuizSubmit}
-                    className="btn-primary mt-2"
-                  >
-                    Submit Quiz
-                  </button>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Interview Questions */}
+          {activeTopic.interviewQuestions && activeTopic.interviewQuestions.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-purple-600" />
+                Interview Questions
+              </h3>
+              <div className="space-y-3">
+                {activeTopic.interviewQuestions.map((iq, i) => (
+                  <details key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <summary className="p-3 bg-purple-50 cursor-pointer hover:bg-purple-100 font-medium text-sm text-gray-800">
+                      Q{i + 1}: {iq.question}
+                    </summary>
+                    <div className="p-3">
+                      <p className="text-sm text-gray-700 whitespace-pre-line">{iq.answer}</p>
+                      {iq.followUp.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <span className="text-xs font-medium text-gray-500">Follow-up Questions:</span>
+                          <ul className="mt-1 space-y-1">
+                            {iq.followUp.map((f, j) => (
+                              <li key={j} className="text-xs text-purple-600">→ {f}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Common Mistakes */}
+          {activeTopic.commonMistakes && activeTopic.commonMistakes.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                Common Mistakes
+              </h3>
+              <div className="grid gap-2">
+                {activeTopic.commonMistakes.map((mistake, i) => (
+                  <div key={i} className="flex items-start gap-2 p-2 bg-orange-50 rounded-lg">
+                    <span className="text-orange-500 mt-0.5 flex-shrink-0">⚠</span>
+                    <span className="text-sm text-gray-700">{mistake}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
