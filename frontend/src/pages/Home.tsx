@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Building2, TrendingUp, ArrowRight, GraduationCap, BookOpen, Trophy, Compass } from 'lucide-react'
+import { Building2, TrendingUp, ArrowRight, GraduationCap, BookOpen, Trophy, Compass, AlertTriangle, Loader2 } from 'lucide-react'
 import { jobsApi } from '../services/api'
 import JobCard from '../components/JobCard'
 
 function Home() {
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, isError: statsError, isFetching: statsFetching } = useQuery({
     queryKey: ['stats'],
     queryFn: jobsApi.getStats,
+    refetchInterval: (query) => query.state.status === 'error' ? 15000 : false,
   })
 
-  const { data: recentJobs, isLoading: jobsLoading } = useQuery({
+  const { data: recentJobs, isLoading: jobsLoading, isError: jobsError, isFetching: jobsFetching } = useQuery({
     queryKey: ['jobs', 'recent'],
     queryFn: () => jobsApi.getJobs({ page: 1, per_page: 5 }),
+    refetchInterval: (query) => query.state.status === 'error' ? 15000 : false,
   })
+
+  const isServerWaking = (statsLoading || jobsLoading) && (statsFetching || jobsFetching)
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -37,6 +41,27 @@ function Home() {
           </Link>
         </div>
       </div>
+
+      {/* Server Status Banner */}
+      {(statsError || jobsError) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-amber-800 font-medium text-sm">Server is starting up...</p>
+            <p className="text-amber-600 text-sm mt-1">
+              Our backend server sleeps when inactive. It usually takes 1-2 minutes to wake up.
+              The page will auto-refresh once connected. Learning tracks work offline!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isServerWaking && !statsError && !jobsError && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 text-blue-500 animate-spin flex-shrink-0" />
+          <p className="text-blue-700 text-sm">Loading data from server...</p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -145,7 +170,13 @@ function Home() {
           </Link>
         </div>
 
-        {jobsLoading ? (
+        {jobsError ? (
+          <div className="card text-center py-10">
+            <AlertTriangle className="w-12 h-12 text-amber-300 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">Server is waking up...</p>
+            <p className="text-gray-400 text-sm mt-1">Jobs will appear shortly. Meanwhile, explore our <Link to="/learning" className="text-primary-600 hover:underline">Learning Tracks</Link>!</p>
+          </div>
+        ) : jobsLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="card animate-pulse">

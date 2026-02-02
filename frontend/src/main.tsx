@@ -8,7 +8,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
+      retry: 3, // Render free tier may need multiple retries during cold start
+      retryDelay: (attemptIndex) => Math.min(5000 * (attemptIndex + 1), 30000),
     },
   },
 })

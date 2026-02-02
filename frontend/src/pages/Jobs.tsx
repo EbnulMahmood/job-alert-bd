@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { Search, Filter, Briefcase, Loader2 } from 'lucide-react'
+import { Search, Filter, Briefcase, Loader2, AlertTriangle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { jobsApi } from '../services/api'
 import JobCard from '../components/JobCard'
 import CompanyFilter from '../components/CompanyFilter'
@@ -16,7 +17,7 @@ function Jobs() {
     queryFn: jobsApi.getCompanies,
   })
 
-  const { data: jobsData, isLoading, isFetching } = useQuery({
+  const { data: jobsData, isLoading, isFetching, isError } = useQuery({
     queryKey: ['jobs', page, selectedCompany, selectedLevel, search],
     queryFn: () => jobsApi.getJobs({
       page,
@@ -26,6 +27,7 @@ function Jobs() {
       search: search || undefined,
     }),
     placeholderData: keepPreviousData,
+    refetchInterval: (query) => query.state.status === 'error' ? 15000 : false,
   })
 
   const handleSearch = (e: React.FormEvent) => {
@@ -52,6 +54,20 @@ function Jobs() {
           />
         </div>
       </form>
+
+      {/* Server Status */}
+      {isError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-amber-800 font-medium text-sm">Server is starting up...</p>
+            <p className="text-amber-600 text-sm mt-1">
+              Our server takes 1-2 minutes to wake up after inactivity. Page will auto-refresh.
+              Try <Link to="/learning" className="text-primary-600 hover:underline font-medium">Learning Tracks</Link> while waiting!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-6 space-y-4">
@@ -125,7 +141,13 @@ function Jobs() {
       </div>
 
       {/* Job List */}
-      {isLoading ? (
+      {isError ? (
+        <div className="card text-center py-10">
+          <AlertTriangle className="w-12 h-12 text-amber-300 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">Server is waking up...</p>
+          <p className="text-gray-400 text-sm mt-1">Jobs will appear automatically once the server is ready.</p>
+        </div>
+      ) : isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="card animate-pulse">
