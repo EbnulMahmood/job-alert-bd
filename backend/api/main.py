@@ -1,11 +1,17 @@
 """
 FastAPI main application.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import os
 import sys
+import logging
+import traceback
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,9 +48,13 @@ app = FastAPI(
 # CORS configuration
 ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,https://job-alert-bd-seven.vercel.app"
+    ).split(",")
     if origin.strip()
 ]
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,6 +63,16 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key"],
 )
+
+# Global exception handler for debugging
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error on {request.method} {request.url}: {exc}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "type": type(exc).__name__},
+    )
 
 # Include routers
 app.include_router(jobs_router, prefix="/api")
