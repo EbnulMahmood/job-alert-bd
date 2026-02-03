@@ -92,12 +92,12 @@ async def health_check():
 MONITORED_COMPANIES = [
     {"name": "Cefalo", "url": "https://career.cefalo.com/", "type": "private"},
     {"name": "Kaz Software", "url": "https://kazsoftware.hire.trakstar.com/", "type": "private"},
-    {"name": "SELISE", "url": "https://selise.ch/career/", "type": "private"},
+    {"name": "SELISE", "url": "https://selisegroup.com/job/", "type": "private"},
     {"name": "Enosis Solutions", "url": "https://enosisbd.pinpointhq.com/", "type": "private"},
     {"name": "BJIT", "url": "https://bjitgroup.com/career", "type": "private"},
-    {"name": "Samsung R&D", "url": "https://www.samsung.com/bd/about-us/careers/", "type": "private"},
+    {"name": "Samsung R&D", "url": "https://sec.wd3.myworkdayjobs.com/Samsung_Careers", "type": "private"},
     {"name": "Therap BD", "url": "https://therap.hire.trakstar.com/", "type": "private"},
-    {"name": "Brain Station 23", "url": "https://brainstation-23.com/career-verse/", "type": "private"},
+    {"name": "Brain Station 23", "url": "https://brainstation-23.easy.jobs/", "type": "private"},
     {"name": "Bangladesh Bank", "url": "https://erecruitment.bb.org.bd/", "type": "government"},
     {"name": "a2i", "url": "https://a2i.gov.bd/site/view/jobs/-", "type": "government"},
 ]

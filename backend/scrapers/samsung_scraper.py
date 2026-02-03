@@ -1,6 +1,8 @@
 """
-Scraper for Samsung R&D Institute Bangladesh careers page.
-URL: https://www.samsung.com/bd/about-us/careers/
+Scraper for Samsung R&D Institute Bangladesh careers.
+
+Samsung uses Workday for their job portal which is fully JS-rendered.
+We query the Workday API directly for Bangladesh positions.
 """
 from .base_scraper import BaseScraper, JobListing
 import logging
@@ -12,134 +14,115 @@ class SamsungScraper(BaseScraper):
     """Scraper for Samsung R&D Bangladesh job listings."""
 
     COMPANY_NAME = "Samsung R&D"
-    BASE_URL = "https://www.samsung.com"
-    CAREER_URL = "https://www.samsung.com/bd/about-us/careers/"
-    BDJOBS_URL = "https://jobs.bdjobs.com/companyofferedjobs.asp?id=31249"
+    BASE_URL = "https://sec.wd3.myworkdayjobs.com"
+    CAREER_URL = "https://sec.wd3.myworkdayjobs.com/Samsung_Careers"
+    WORKDAY_API = "https://sec.wd3.myworkdayjobs.com/wday/cxs/sec/Samsung_Careers/jobs"
 
     async def scrape(self) -> list[JobListing]:
-        """Scrape job listings from Samsung R&D's career page."""
+        """Scrape Samsung R&D Bangladesh jobs from Workday API."""
         jobs = []
 
-        # Scrape main career page
-        soup = await self.fetch_page(self.CAREER_URL)
-        if soup:
-            jobs.extend(await self._parse_samsung_page(soup))
+        # Strategy 1: Workday API with Bangladesh country filter
+        jobs = await self._query_workday_api()
+        if jobs:
+            logger.info(f"Found {len(jobs)} jobs via Workday API")
+            return jobs
 
-        # Also try BDJobs page for Samsung
-        bdjobs_soup = await self.fetch_page(self.BDJOBS_URL)
-        if bdjobs_soup:
-            jobs.extend(await self._parse_bdjobs_page(bdjobs_soup))
+        # Strategy 2: Workday API with keyword search
+        jobs = await self._query_workday_keyword()
+        if jobs:
+            logger.info(f"Found {len(jobs)} jobs via Workday keyword search")
+            return jobs
 
-        # Remove duplicates
-        seen_titles = set()
-        unique_jobs = []
-        for job in jobs:
-            if job.title not in seen_titles:
-                seen_titles.add(job.title)
-                unique_jobs.append(job)
+        logger.warning(f"No jobs found for {self.COMPANY_NAME}")
+        return jobs
 
-        logger.info(f"Found {len(unique_jobs)} jobs at {self.COMPANY_NAME}")
-        return unique_jobs
-
-    async def _parse_samsung_page(self, soup) -> list[JobListing]:
-        """Parse Samsung's official career page."""
+    async def _query_workday_api(self) -> list[JobListing]:
+        """Query Samsung's Workday API with Bangladesh country filter."""
         jobs = []
-
         try:
-            # Samsung's career page structure
-            job_cards = soup.select(
-                ".job-listing, .career-item, .position-card, "
-                "[class*='career'], [class*='job']"
+            search_payload = {
+                "appliedFacets": {
+                    "locationCountry": ["db69d0e4446c11de98360015c5e6daf6"]
+                },
+                "limit": 20,
+                "offset": 0,
+                "searchText": ""
+            }
+
+            response = await self.client.post(
+                self.WORKDAY_API,
+                json=search_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
             )
 
-            if not job_cards:
-                # Try finding any job-related links
-                job_links = soup.select("a[href*='job'], a[href*='career'], a[href*='position']")
+            if response.status_code != 200:
+                logger.debug(f"Workday API returned {response.status_code}")
+                return jobs
 
-                for link in job_links:
-                    href = link.get("href", "")
-                    title = link.get_text(strip=True)
-
-                    if not title or len(title) < 5:
-                        continue
-
-                    if not href.startswith("http"):
-                        href = f"{self.BASE_URL}{href}"
-
-                    job = JobListing(
-                        company=self.COMPANY_NAME,
-                        title=title,
-                        url=href,
-                        location="Dhaka, Bangladesh",
-                        experience_level=self.extract_experience_level(title),
-                        tags=["Samsung", "MNC", "R&D"],
-                    )
-                    jobs.append(job)
-            else:
-                for card in job_cards:
-                    try:
-                        title_elem = card.select_one("h2, h3, h4, .title, a")
-                        title = title_elem.get_text(strip=True) if title_elem else ""
-
-                        link = card.select_one("a")
-                        url = self.CAREER_URL
-                        if link:
-                            url = link.get("href", "")
-                            if not url.startswith("http"):
-                                url = f"{self.BASE_URL}{url}"
-
-                        if title:
-                            job = JobListing(
-                                company=self.COMPANY_NAME,
-                                title=title,
-                                url=url,
-                                location="Dhaka, Bangladesh",
-                                experience_level=self.extract_experience_level(title),
-                                tags=["Samsung", "MNC", "R&D"],
-                            )
-                            jobs.append(job)
-
-                    except Exception as e:
-                        logger.error(f"Error parsing job card: {e}")
+            data = response.json()
+            jobs = self._parse_workday_response(data)
 
         except Exception as e:
-            logger.error(f"Error parsing Samsung page: {e}")
+            logger.error(f"Error querying Workday API: {e}")
 
         return jobs
 
-    async def _parse_bdjobs_page(self, soup) -> list[JobListing]:
-        """Parse BDJobs page for Samsung listings."""
+    async def _query_workday_keyword(self) -> list[JobListing]:
+        """Query Workday API with 'Bangladesh' keyword."""
         jobs = []
-
         try:
-            # BDJobs structure
-            job_rows = soup.select("tr.job-row, .job-item, [class*='job']")
+            search_payload = {
+                "appliedFacets": {},
+                "limit": 20,
+                "offset": 0,
+                "searchText": "Bangladesh"
+            }
 
-            if not job_rows:
-                # Try finding job links directly
-                job_links = soup.select("a[href*='jobdetails'], a[href*='job']")
+            response = await self.client.post(
+                self.WORKDAY_API,
+                json=search_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+            )
 
-                for link in job_links:
-                    title = link.get_text(strip=True)
-                    href = link.get("href", "")
+            if response.status_code != 200:
+                return jobs
 
-                    if not title or len(title) < 5:
-                        continue
-
-                    if not href.startswith("http"):
-                        href = f"https://jobs.bdjobs.com{href}"
-
-                    job = JobListing(
-                        company=self.COMPANY_NAME,
-                        title=title,
-                        url=href,
-                        location="Dhaka, Bangladesh",
-                        experience_level=self.extract_experience_level(title),
-                        tags=["Samsung", "MNC", "R&D", "BDJobs"],
-                    )
-                    jobs.append(job)
+            data = response.json()
+            jobs = self._parse_workday_response(data)
 
         except Exception as e:
-            logger.error(f"Error parsing BDJobs page: {e}")
+            logger.debug(f"Workday keyword search failed: {e}")
+
+        return jobs
+
+    def _parse_workday_response(self, data: dict) -> list[JobListing]:
+        """Parse Workday API response into JobListing objects."""
+        jobs = []
+        for posting in data.get("jobPostings", []):
+            title = posting.get("title", "").strip()
+            if not title:
+                continue
+
+            external_path = posting.get("externalPath", "")
+            url = f"{self.CAREER_URL}{external_path}" if external_path else self.CAREER_URL
+
+            loc_info = posting.get("locationsText", "Bangladesh")
+
+            job = JobListing(
+                company=self.COMPANY_NAME,
+                title=title,
+                url=url,
+                location=loc_info or "Dhaka, Bangladesh",
+                experience_level=self.extract_experience_level(title),
+                tags=["Samsung", "MNC", "R&D"],
+            )
+            jobs.append(job)
 
         return jobs

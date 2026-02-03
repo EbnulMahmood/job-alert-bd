@@ -122,6 +122,61 @@ async def save_jobs_to_db(jobs: list[JobListing]) -> dict:
     return stats
 
 
+async def deactivate_stale_jobs(scraped_urls: set[str]) -> int:
+    """Deactivate jobs that are no longer found by scrapers or have passed deadlines."""
+    import ssl
+    from datetime import date as date_type
+
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/job_alert_bd"
+    )
+
+    connect_args = {}
+    if "supabase" in DATABASE_URL:
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        connect_args = {
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+            "ssl": ssl_context,
+        }
+
+    engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    deactivated = 0
+    today = date_type.today()
+
+    async with async_session() as session:
+        query = select(Job).where(Job.is_active == True)
+        result = await session.execute(query)
+        active_jobs = result.scalars().all()
+
+        for job in active_jobs:
+            should_deactivate = False
+
+            # Deactivate if deadline has passed
+            if job.deadline and job.deadline < today:
+                should_deactivate = True
+                logger.info(f"Deactivating expired job: {job.title} (deadline: {job.deadline})")
+
+            # Deactivate if URL no longer found by any scraper
+            if scraped_urls and job.url not in scraped_urls:
+                should_deactivate = True
+                logger.info(f"Deactivating stale job: {job.title} (URL no longer found)")
+
+            if should_deactivate:
+                job.is_active = False
+                deactivated += 1
+
+        await session.commit()
+
+    await engine.dispose()
+    return deactivated
+
+
 async def main():
     """Main function to run scrapers and save results."""
     logger.info(f"Starting job scraping at {datetime.now()}")
@@ -136,9 +191,15 @@ async def main():
     # Save to database
     stats = await save_jobs_to_db(jobs)
 
+    # Deactivate stale/expired jobs
+    scraped_urls = {job.url for job in jobs}
+    deactivated = await deactivate_stale_jobs(scraped_urls)
+    stats["deactivated"] = deactivated
+
     logger.info(f"Scraping complete!")
     logger.info(f"  New jobs: {stats['new']}")
     logger.info(f"  Updated jobs: {stats['existing']}")
+    logger.info(f"  Deactivated: {stats.get('deactivated', 0)}")
     logger.info(f"  Errors: {stats['errors']}")
 
     # Print summary
@@ -148,6 +209,7 @@ async def main():
     print(f"Total jobs found: {len(jobs)}")
     print(f"New jobs added: {stats['new']}")
     print(f"Existing jobs updated: {stats['existing']}")
+    print(f"Deactivated (stale/expired): {stats.get('deactivated', 0)}")
     print(f"Errors: {stats['errors']}")
     print("="*50)
 
