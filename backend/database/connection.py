@@ -29,13 +29,17 @@ if is_supabase or is_production:
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
         "ssl": ssl_context,
+        "timeout": 30,  # asyncpg connection timeout in seconds
     }
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=not is_production and not is_supabase,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=2,
+    max_overflow=3,
+    pool_pre_ping=True,
+    pool_recycle=300,  # Recycle connections every 5 minutes
+    pool_timeout=30,
     connect_args=connect_args,
 )
 
