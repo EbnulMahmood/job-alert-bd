@@ -45,20 +45,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration
-ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:5173,https://job-alert-bd-seven.vercel.app"
-    ).split(",")
-    if origin.strip()
-]
-logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
-
+# CORS configuration - allow all origins since we don't use credentials
+# This is safe because allow_credentials=False (no cookies/auth headers shared)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key"],
