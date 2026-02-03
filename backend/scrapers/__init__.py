@@ -9,6 +9,8 @@ from .therap_scraper import TherapScraper
 from .brainstation_scraper import BrainStationScraper
 from .bangladesh_bank_scraper import BangladeshBankScraper
 from .a2i_scraper import A2IScraper
+from .chaldal_scraper import ChaldalScraper
+from .linkedin_dotnet_scraper import LinkedInDotNetScraper
 
 ALL_SCRAPERS = [
     CefaloScraper,
@@ -21,6 +23,8 @@ ALL_SCRAPERS = [
     BrainStationScraper,
     BangladeshBankScraper,
     A2IScraper,
+    ChaldalScraper,
+    LinkedInDotNetScraper,
 ]
 
 __all__ = [
@@ -35,5 +39,7 @@ __all__ = [
     "BrainStationScraper",
     "BangladeshBankScraper",
     "A2IScraper",
+    "ChaldalScraper",
+    "LinkedInDotNetScraper",
     "ALL_SCRAPERS",
 ]

@@ -98,6 +98,8 @@ MONITORED_COMPANIES = [
     {"name": "Samsung R&D", "url": "https://sec.wd3.myworkdayjobs.com/Samsung_Careers", "type": "private"},
     {"name": "Therap BD", "url": "https://therap.hire.trakstar.com/", "type": "private"},
     {"name": "Brain Station 23", "url": "https://brainstation-23.easy.jobs/", "type": "private"},
+    {"name": "Chaldal", "url": "https://chaldal.tech/", "type": "private"},
+    {"name": "LinkedIn (.NET Jobs)", "url": "https://www.linkedin.com/jobs/search?keywords=.NET+developer&location=Bangladesh", "type": "aggregator"},
     {"name": "Bangladesh Bank", "url": "https://erecruitment.bb.org.bd/", "type": "government"},
     {"name": "a2i", "url": "https://a2i.gov.bd/site/view/jobs/-", "type": "government"},
 ]
