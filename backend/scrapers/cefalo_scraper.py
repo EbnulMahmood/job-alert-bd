@@ -37,8 +37,10 @@ class CefaloScraper(BaseScraper):
             for card in job_cards:
                 try:
                     # Extract job title
-                    title_elem = card.select_one("h2, h3, .job-title, .position-title")
-                    title = title_elem.get_text(strip=True) if title_elem else card.get_text(strip=True)
+                    title_elem = card.select_one("h2, h3, h4, .job-title, .position-title")
+                    if not title_elem:
+                        continue
+                    title = title_elem.get_text(strip=True)
 
                     # Extract job URL
                     link = card.get("href") if card.name == "a" else card.select_one("a")

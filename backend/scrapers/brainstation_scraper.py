@@ -118,16 +118,27 @@ class BrainStationScraper(BaseScraper):
             logger.error(f"Error parsing job element: {e}")
             return None
 
+    # Non-job URL path segments to skip
+    SKIP_URL_PATHS = [
+        "/locale/", "/company/", "/about/", "/contact/",
+        "/login", "/register", "/signup", "/sign-up",
+        "/privacy", "/terms", "/faq", "/help",
+        "/category/", "/tag/", "/page/", "/author/",
+    ]
+
+    # Non-job title patterns
+    SKIP_TITLE_PATTERNS = [
+        "apply now", "learn more", "read more", "view all",
+        "contact", "about", "home", "career", "login", "sign up",
+        "english", "bangla", "chinese", "japanese", "korean",
+        "french", "german", "spanish", "arabic", "hindi",
+        "traditional", "simplified", "português", "italiano",
+    ]
+
     def _parse_job_links(self, soup) -> list[JobListing]:
         """Fallback: parse job links from the page."""
         jobs = []
         seen_urls = set()
-
-        # Skip these navigation/non-job titles
-        skip_titles = {
-            "apply now", "learn more", "read more", "view all",
-            "contact", "about", "home", "career", "login", "sign up",
-        }
 
         for link in soup.select("a[href]"):
             href = link.get("href", "").strip()
@@ -140,10 +151,13 @@ class BrainStationScraper(BaseScraper):
             if "easy.jobs" not in href and not href.startswith("/"):
                 continue
 
-            # Skip navigation
-            if title.lower() in skip_titles:
-                continue
+            # Skip short titles (likely nav links)
             if len(title) < 10:
+                continue
+
+            # Skip navigation/non-job titles
+            title_lower = title.lower()
+            if any(pattern in title_lower for pattern in self.SKIP_TITLE_PATTERNS):
                 continue
 
             # Normalize URL
@@ -152,6 +166,11 @@ class BrainStationScraper(BaseScraper):
 
             # Must look like a job detail URL (not homepage, not company page)
             if href.rstrip("/") == self.BASE_URL.rstrip("/"):
+                continue
+
+            # Skip non-job URL paths (locale, company info, etc.)
+            href_lower = href.lower()
+            if any(path in href_lower for path in self.SKIP_URL_PATHS):
                 continue
 
             if href in seen_urls:

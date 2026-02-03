@@ -90,6 +90,12 @@ async def save_jobs_to_db(jobs: list[JobListing]) -> dict:
                     existing.title = job_listing.title
                     existing.description = job_listing.description
                     existing.requirements = job_listing.requirements
+                    existing.location = job_listing.location
+                    existing.job_type = job_listing.job_type
+                    existing.experience_level = job_listing.experience_level
+                    existing.deadline = job_listing.deadline
+                    existing.salary_range = job_listing.salary_range
+                    existing.tags = job_listing.tags
                     existing.is_active = True
                     stats["existing"] += 1
                 else:
