@@ -7,6 +7,7 @@ Page structure: div.list-group > a[href="#"] > span (title) + p (locations)
 """
 from .base_scraper import BaseScraper, JobListing
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,15 @@ class ChaldalScraper(BaseScraper):
                 # Extract tech tags from description
                 tags = self._extract_tech_tags(f"{title} {description}")
 
+                # Generate unique URL using title slug (APPLY links are same generic form)
+                slug = re.sub(r'[^\w\s-]', '', title.lower())
+                slug = re.sub(r'[\s_]+', '-', slug).strip('-')
+                job_url = apply_url or f"{self.CAREER_URL}#job-{slug}"
+
                 job = JobListing(
                     company=self.COMPANY_NAME,
                     title=title,
-                    url=apply_url or self.CAREER_URL,
+                    url=job_url,
                     description=description[:2000] if description else None,
                     location=location,
                     experience_level=self.extract_experience_level(title, description or ""),

@@ -41,13 +41,18 @@ class TherapScraper(BaseScraper):
             )
 
             if not job_cards:
-                # Find job links
+                # Trakstar HTML: a[href*='jobs'] > div.row > div > h3 + div.location
                 job_links = soup.select("a[href*='jobs'], a[href*='opening']")
                 seen = set()
 
                 for link in job_links:
                     href = link.get("href", "")
-                    title = link.get_text(strip=True)
+
+                    # Extract title from h3 only (not full link text)
+                    title_elem = link.select_one(
+                        "h3.js-job-list-opening-name, h3, h4, .opening-title"
+                    )
+                    title = title_elem.get_text(strip=True) if title_elem else ""
 
                     if href in seen or not title or len(title) < 3:
                         continue
@@ -57,13 +62,32 @@ class TherapScraper(BaseScraper):
                     if not href.startswith("http"):
                         href = f"{self.BASE_URL}{href}"
 
+                    # Extract location separately
+                    loc_elem = link.select_one(
+                        "div.js-job-list-opening-loc, .location, [class*='location']"
+                    )
+                    location = loc_elem.get_text(strip=True) if loc_elem else "Dhaka, Bangladesh"
+
+                    # Extract department
+                    dept_elem = link.select_one("div.rb-text-4")
+                    department = dept_elem.get_text(strip=True) if dept_elem else ""
+
+                    # Extract job type (specifically the meta div, not location meta spans)
+                    type_elem = link.select_one("div.js-job-list-opening-meta")
+                    job_type = type_elem.get_text(strip=True) if type_elem else "Full-time"
+
+                    tags = ["Therap", "US Healthcare", "SaaS"]
+                    if department:
+                        tags.append(department)
+
                     job = JobListing(
                         company=self.COMPANY_NAME,
                         title=title,
                         url=href,
-                        location="Dhaka, Bangladesh",
+                        location=location,
+                        job_type=job_type,
                         experience_level=self.extract_experience_level(title),
-                        tags=["Therap", "US Healthcare", "SaaS"],
+                        tags=tags,
                     )
                     jobs.append(job)
 
